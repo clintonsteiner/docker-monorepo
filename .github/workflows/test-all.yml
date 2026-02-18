@@ -24,8 +24,8 @@ jobs:
             context: ./caddy-cloudflaredns
           - project: jenkinsapi
             context: ./jenkinsapi
-          - project: llm-bot
-            context: ./llm-bot
+          - project: ollama
+            context: ./ollama
 
     steps:
       - name: Checkout code
@@ -44,6 +44,9 @@ jobs:
           elif [ "${{ matrix.project }}" == "jenkinsapi" ]; then
             echo "Building jenkinsapi:test..."
             docker build -t jenkinsapi:test .
+          elif [ "${{ matrix.project }}" == "ollama" ]; then
+            echo "Building ollama:test..."
+            docker build -t ollama:test .
           fi
 
           # Run tests

@@ -1,7 +1,7 @@
-.PHONY: help install-hooks pre-commit build-caddy build-jenkinsapi build-llm-bot test-caddy test-jenkinsapi test-llm-bot test-all clean lint format validate build-all
+.PHONY: help install-hooks pre-commit build-caddy build-jenkinsapi build-ollama test-caddy test-jenkinsapi test-ollama test-all clean lint format validate build-all
 
 # Project definitions
-PROJECTS := caddy-cloudflaredns jenkinsapi llm-bot
+PROJECTS := caddy-cloudflaredns jenkinsapi ollama
 
 help:
 	@echo "Docker Monorepo - Available targets:"
@@ -13,11 +13,11 @@ help:
 	@echo "Build & Test:"
 	@echo "  make build-caddy             Build caddy-cloudflaredns Docker image"
 	@echo "  make build-jenkinsapi        Build jenkinsapi Docker images"
-	@echo "  make build-llm-bot           Build llm-bot Docker image"
+	@echo "  make build-ollama            Build ollama Docker image"
 	@echo "  make build-all               Build all Docker images"
 	@echo "  make test-caddy              Build and test caddy-cloudflaredns"
 	@echo "  make test-jenkinsapi         Build and test jenkinsapi"
-	@echo "  make test-llm-bot            Build and test llm-bot"
+	@echo "  make test-ollama             Build and test ollama"
 	@echo "  make test-all                Build and test all projects"
 	@echo ""
 	@echo "Development:"
@@ -30,7 +30,7 @@ help:
 	@echo "Project Structure:"
 	@echo "  caddy-cloudflaredns/         Caddy with Cloudflare DNS module"
 	@echo "  jenkinsapi/                  Jenkins with Python test environment"
-	@echo "  llm-bot/                     vLLM server for Claude CLI"
+	@echo "  ollama/                      Ollama LLM server for Claude CLI"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make help                    Show this help message"
@@ -71,20 +71,20 @@ test-quick-jenkinsapi:
 	@echo "Quick testing jenkinsapi..."
 	$(MAKE) -C jenkinsapi test-quick
 
-# llm-bot targets
-build-llm-bot:
-	@echo "Building llm-bot..."
-	$(MAKE) -C llm-bot build
+# ollama targets
+build-ollama:
+	@echo "Building ollama..."
+	$(MAKE) -C ollama build
 
-test-llm-bot:
-	@echo "Testing llm-bot..."
-	$(MAKE) -C llm-bot test
+test-ollama:
+	@echo "Testing ollama..."
+	$(MAKE) -C ollama test
 
 # Multi-project targets
-build-all: build-caddy build-jenkinsapi build-llm-bot
+build-all: build-caddy build-jenkinsapi build-ollama
 	@echo "✓ All images built successfully"
 
-test-all: test-caddy test-jenkinsapi test-llm-bot
+test-all: test-caddy test-jenkinsapi test-ollama
 	@echo "✓ All tests passed"
 
 lint:
@@ -115,7 +115,7 @@ clean:
 	@echo "Cleaning up all projects..."
 	$(MAKE) -C caddy-cloudflaredns clean 2>/dev/null || true
 	$(MAKE) -C jenkinsapi clean 2>/dev/null || true
-	$(MAKE) -C llm-bot clean 2>/dev/null || true
+	$(MAKE) -C ollama clean 2>/dev/null || true
 	@echo "✓ Cleanup complete"
 
 shell:

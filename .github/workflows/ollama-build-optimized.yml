@@ -1,17 +1,17 @@
-name: llm-bot - Build Once, Push Everywhere
+name: ollama - Build Once, Push Everywhere
 
 on:
   push:
     branches:
       - master
     paths:
-      - 'llm-bot/**'
-      - '.github/workflows/llm-bot-build-optimized.yml'
+      - 'ollama/**'
+      - '.github/workflows/ollama-build-optimized.yml'
   workflow_dispatch:
 
 env:
   DOCKER_USERNAME: clintonsteiner
-  DOCKER_CONTAINER_NAME: llm-bot
+  DOCKER_CONTAINER_NAME: ollama
   DOCKER_BUILDKIT: 1
   BUILDKIT_PROGRESS: plain
   BUILDKIT_INLINE_CACHE: 1
@@ -28,7 +28,7 @@ jobs:
       should-build: ${{ steps.detect.outputs.should-build }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -45,8 +45,8 @@ jobs:
           HASH=$(git rev-parse --short HEAD)
           echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
 
-          # Use vLLM version as tag
-          VERSION="1.0.0"
+          # Use version from VERSION file
+          VERSION=$(cat ollama/VERSION | tr -d '\n')
           echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
           echo "cache-tag=buildcache" >> $GITHUB_OUTPUT
 
@@ -57,16 +57,16 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       - name: Build and test image
-        working-directory: llm-bot
+        working-directory: ollama
         timeout-minutes: 5
         run: |
-          echo "Building llm-bot:test..."
-          docker build -t llm-bot:test .
+          echo "Building ollama:test..."
+          docker build -t ollama:test .
 
           echo "Running tests..."
           chmod +x test/test-image.sh
@@ -79,7 +79,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -94,7 +94,7 @@ jobs:
       - name: Build & Push amd64 (single build, multiple tags)
         uses: docker/build-push-action@v6
         with:
-          context: ./llm-bot
+          context: ./ollama
           platforms: linux/amd64
           push: true
           tags: |
@@ -111,9 +111,53 @@ jobs:
             type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.cache-tag }}-amd64
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.cache-tag }}-amd64,mode=max
 
+  build-arm64:
+    runs-on: ubuntu-latest
+    needs: [prepare-tags, test]
+    if: needs.prepare-tags.outputs.should-build == 'true'
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Login to registries
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
+
+      - name: Build & Push arm64 (single build, multiple tags)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ollama
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.cache-tag }}-arm64
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.cache-tag }}-arm64,mode=max
+
   manifest:
     runs-on: ubuntu-latest
-    needs: [prepare-tags, test, build-amd64]
+    needs: [prepare-tags, test, build-amd64, build-arm64]
     if: needs.prepare-tags.outputs.should-build == 'true'
     timeout-minutes: 5
     steps:
@@ -124,49 +168,59 @@ jobs:
 
       - name: Create multi-arch manifests (reuse built images, no rebuild)
         run: |
+          # Use prebuilt images - no rebuild needed
+
           # Hash tag manifest
           docker manifest create \
             ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
           docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
 
           # Version tag manifest
           docker manifest create \
             ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }} \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
           docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}
 
           # Latest tag manifest
           docker manifest create \
             ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
           docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
 
           # Stable tag manifest
           docker manifest create \
             ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
           docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
 
           # Repeat for Docker Hub
           docker manifest create \
             ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
-            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64 \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
           docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
 
           docker manifest create \
             ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }} \
-            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64 \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
           docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}
 
           docker manifest create \
             ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest \
-            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64 \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
           docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
 
           docker manifest create \
             ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable \
-            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64 \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
           docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
 
   release:
@@ -176,26 +230,26 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       - name: Create Release (no rebuild, just metadata)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: llm-bot-${{ needs.prepare-tags.outputs.version-tag }}
+          tag_name: ollama-${{ needs.prepare-tags.outputs.version-tag }}
           draft: false
           prerelease: false
           body: |
-            vLLM LLM Server for Claude CLI
+            Ollama LLM Server for Claude CLI
 
             - Hash: ${{ needs.prepare-tags.outputs.image-hash }}
-            - Built with: amd64 architecture
+            - Built with: parallel amd64 + arm64 builds
             - Tags: hash, version, latest, stable
 
             ## Quick Start
             ```bash
-            docker run -d -p 8000:8000 clintonsteiner/llm-bot:latest
+            docker run -d -p 11434:11434 clintonsteiner/ollama:latest
             ```
 
-            See [README](llm-bot/README.md) for detailed setup instructions.
+            See [README](ollama/README.md) for detailed setup instructions.
