@@ -4,29 +4,30 @@ FROM jenkins/jenkins:lts-jdk25
 
 # Install additional system utilities needed for tests and healthchecks
 USER root
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
-        iputils-ping && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+        iputils-ping
 
 # Ensure JENKINS_HOME directory exists with proper permissions for mounted volumes
 RUN mkdir -p /var/jenkins_home && chmod 777 /var/jenkins_home
 
-# Copy and setup custom entrypoint wrapper script
+# Copy plugins.txt early for better layer caching
+COPY plugins.txt /tmp/plugins.txt
+
+# Install plugins using jenkins-plugin-cli with build cache
+# This handles plugin dependencies automatically
+# Use --latest=false to respect version pins in plugins.txt
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    jenkins-plugin-cli --plugin-file /tmp/plugins.txt --verbose --latest=false
+
+# Copy and setup custom entrypoint wrapper script (late in build to avoid rebuilds)
 COPY jenkins-entrypoint.sh /usr/local/bin/jenkins-entrypoint.sh
 RUN chmod +x /usr/local/bin/jenkins-entrypoint.sh
 
 USER jenkins
-
-# Copy plugins.txt
-COPY plugins.txt /tmp/plugins.txt
-
-# Install plugins using jenkins-plugin-cli
-# This handles plugin dependencies automatically
-# Use --latest=false to respect version pins in plugins.txt
-RUN jenkins-plugin-cli --plugin-file /tmp/plugins.txt --verbose --latest=false
 
 # Set Jenkins configuration for faster startup and optimal performance
 # Skip wizard, disable multicast, skip update center checks, enable parallel startup

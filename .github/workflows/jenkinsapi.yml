@@ -3,7 +3,7 @@ name: jenkinsapi - Docker Build & Test
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'jenkinsapi/**'
       - '.github/workflows/jenkinsapi.yml'
@@ -36,6 +36,8 @@ jobs:
           push: false
           load: true
           tags: jenkinsapi:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build test image
         uses: docker/build-push-action@v6
@@ -46,6 +48,8 @@ jobs:
           push: false
           load: true
           tags: jenkinsapi-test:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Run tests
         working-directory: jenkinsapi
@@ -100,6 +104,8 @@ jobs:
           tags: |
             ghcr.io/${{ github.actor }}/jenkinsapi:${{ steps.prepare.outputs.version }}
             ghcr.io/${{ github.actor }}/jenkinsapi:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build and Push test image
         uses: docker/build-push-action@v6
@@ -108,6 +114,8 @@ jobs:
           file: ./jenkinsapi/Dockerfile.test
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ github.actor }}/jenkinsapi-test:${{ steps.prepare.outputs.version }}
             ghcr.io/${{ github.actor }}/jenkinsapi-test:latest

@@ -1,0 +1,59 @@
+name: Test All Projects
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+      - '*.hotfix'
+  pull_request:
+    branches:
+      - master
+      - develop
+  workflow_dispatch:
+
+jobs:
+  test-matrix:
+    name: Test ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - project: caddy-cloudflaredns
+            context: ./caddy-cloudflaredns
+          - project: jenkinsapi
+            context: ./jenkinsapi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run tests for ${{ matrix.project }}
+        working-directory: ${{ matrix.project }}
+        run: |
+          chmod +x test/test-image.sh
+          ./test/test-image.sh
+
+  all-tests-passed:
+    name: All tests passed
+    needs: test-matrix
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: All tests passed
+        run: echo "✅ All project tests passed successfully"
+
+  notify-failure:
+    name: Notify test failure
+    needs: test-matrix
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Tests failed
+        run: |
+          echo "❌ Some tests failed. Please fix and push again."
+          exit 1

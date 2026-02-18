@@ -9,36 +9,38 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Set working directory
 WORKDIR /workspace
 
-# Install system dependencies ahead of time
-RUN apt-get update && \
+# Install system dependencies with apt cache (layer cached for faster builds)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         libkrb5-dev \
         gcc \
         git \
-        curl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+        curl
 
-# Install uv - faster Python package manager
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+# Install uv - faster Python package manager (cached)
+RUN --mount=type=cache,target=/root/.cache \
+    curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uv /usr/local/bin/uv
 
 # Create a virtual environment
 RUN uv venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Copy pyproject.toml to install dependencies
+# Copy pyproject.toml early for better layer caching
 COPY pyproject.toml .
 
-# Install Python dependencies from dev group ahead of time
+# Install Python dependencies with pip cache
 # This caches the dependency layer so tests run immediately
-RUN uv pip install -e ".[dev]" && \
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install -e ".[dev]" && \
     uv pip install \
-    pytest-xdist \
-    pytest-cov \
-    pytest-mock \
-    pytest-timeout \
-    pyyaml
+        pytest-xdist \
+        pytest-cov \
+        pytest-mock \
+        pytest-timeout \
+        pyyaml
 
 # Set Python path
 ENV PYTHONPATH=/workspace:$PYTHONPATH
