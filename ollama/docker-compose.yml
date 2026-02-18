@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ${OLLAMA_IMAGE_TAG:-clintonsteiner/ollama:latest}
+    container_name: ${OLLAMA_CONTAINER_NAME:-ollama}
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+
+    # Memory and CPU resource limits
+    deploy:
+      resources:
+        limits:
+          # Maximum memory for the container
+          # Adjust based on your system: 2g, 4g, 8g, etc.
+          memory: ${OLLAMA_MEMORY_LIMIT:-4g}
+          cpus: ${OLLAMA_CPUS_LIMIT:-4}
+        reservations:
+          # Guaranteed memory reservation
+          memory: ${OLLAMA_MEMORY_LIMIT:-4g}
+          cpus: ${OLLAMA_CPUS_LIMIT:-4}
+
+    # Environment variables for Ollama configuration
+    environment:
+      # Number of parallel model loading operations
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:-4}
+
+      # Number of threads per request
+      # Leave empty to auto-detect, or set to match CPUS_LIMIT
+      OLLAMA_NUM_THREADS: ${OLLAMA_NUM_THREADS:-4}
+
+      # Context window size (tokens)
+      # Higher = more memory usage
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-2048}
+
+      # Keep models in memory for this duration before unloading
+      # Format: 5m, 1h, 0 (never unload)
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-5m}
+
+      # Log level
+      OLLAMA_LOG_LEVEL: ${OLLAMA_LOG_LEVEL:-info}
+
+      # mmap mode for faster loading
+      OLLAMA_MMAP: ${OLLAMA_MMAP:-1}
+
+      # Force CPU-only mode (no GPU)
+      OLLAMA_GPU_LAYERS: ${OLLAMA_GPU_LAYERS:-0}
+
+    # Volume configuration
+    volumes:
+      # Model cache volume (persists downloaded models)
+      - ollama_data:/root/.ollama
+      # Optional: use named volume or local path
+      # - ./models:/root/.ollama
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Use CPU-only (no GPU support)
+    runtime: runc
+
+volumes:
+  ollama_data:
+    driver: local

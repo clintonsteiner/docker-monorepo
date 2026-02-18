@@ -44,6 +44,9 @@ jobs:
           elif [ "${{ matrix.project }}" == "jenkinsapi" ]; then
             echo "Building jenkinsapi:test..."
             docker build -t jenkinsapi:test .
+          elif [ "${{ matrix.project }}" == "ollama" ]; then
+            echo "Building ollama:test..."
+            docker build -t ollama:test .
           fi
 
           # Run tests
