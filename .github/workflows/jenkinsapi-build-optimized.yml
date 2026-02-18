@@ -170,7 +170,7 @@ jobs:
 
   manifest:
     runs-on: ubuntu-latest
-    needs: [prepare-tags, build-amd64, build-arm64]
+    needs: [prepare-tags, test, build-amd64, build-arm64]
     if: needs.prepare-tags.outputs.should-build == 'true'
     timeout-minutes: 5
     steps:

@@ -88,7 +88,9 @@ docker run -it --rm \
 docker-monorepo/
 ├── .github/
 │   ├── workflows/
-│   │   └── caddy-cloudflaredns.yml        # Project-specific CI/CD
+│   │   ├── caddy-cloudflaredns-build-optimized.yml  # Project-specific CI/CD
+│   │   ├── jenkinsapi-build-optimized.yml            # Project-specific CI/CD
+│   │   └── test-all.yml                              # Blocking test suite
 │   └── dependabot.yml                     # Dependency updates
 ├── .pre-commit-config.yaml                # Shared pre-commit hooks
 ├── .gitignore                             # Shared git rules

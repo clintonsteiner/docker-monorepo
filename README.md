@@ -117,19 +117,19 @@ See [CONTRIBUTING.md#adding-a-new-project](CONTRIBUTING.md#adding-a-new-project)
 
 Each project has its own GitHub Actions workflow file that triggers only when:
 
-- Changes are pushed to the `main` branch
+- Changes are pushed to the `master` branch
 - Files within the project directory change (using `paths:` filter)
 - The workflow is manually dispatched
 
-Example from `caddy-cloudflaredns.yml`:
+Example from `caddy-cloudflaredns-build-optimized.yml`:
 
 ```yaml
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'caddy-cloudflaredns/**'
-      - '.github/workflows/caddy-cloudflaredns.yml'
+      - '.github/workflows/caddy-cloudflaredns-build-optimized.yml'
   workflow_dispatch:
 ```
 
@@ -164,7 +164,9 @@ GitHub Actions (per-project workflow)
 docker-monorepo/
 ├── .github/
 │   ├── workflows/
-│   │   └── caddy-cloudflaredns.yml        # caddy-cloudflaredns CI/CD
+│   │   ├── caddy-cloudflaredns-build-optimized.yml  # caddy CI/CD (build-once-reuse)
+│   │   ├── jenkinsapi-build-optimized.yml            # jenkinsapi CI/CD (build-once-reuse)
+│   │   └── test-all.yml                              # Blocking test suite
 │   └── dependabot.yml                     # Automated dependency updates
 ├── .pre-commit-config.yaml                # Shared pre-commit hooks
 ├── .gitignore                             # Shared git exclusions
@@ -191,8 +193,8 @@ Each project is released under its respective license. See individual project RE
 
 ---
 
-[caddy-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/caddy-cloudflaredns.yml?style=flat-square
-[caddy-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/caddy-cloudflaredns.yml
+[caddy-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/caddy-cloudflaredns-build-optimized.yml?style=flat-square
+[caddy-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/caddy-cloudflaredns-build-optimized.yml
 
-[jenkins-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/jenkinsapi.yml?style=flat-square
-[jenkins-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/jenkinsapi.yml
+[jenkins-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/jenkinsapi-build-optimized.yml?style=flat-square
+[jenkins-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/jenkinsapi-build-optimized.yml
