@@ -24,9 +24,9 @@ updates:
     assignees:
       - "clintonsteiner"
 
-  # Check for docker image updates for llm-bot
+  # Check for docker image updates for ollama
   - package-ecosystem: "docker"
-    directory: "/llm-bot"
+    directory: "/ollama"
     schedule:
       interval: "weekly"
     assignees:

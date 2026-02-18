@@ -9,7 +9,7 @@ CI/CD workflows, pre-commit hooks, and development tools.
 |---------|-------------|--------|
 | **[caddy-cloudflaredns](./caddy-cloudflaredns/)** | Caddy + Cloudflare DNS for automatic TLS | [![Docker Build][caddy-workflow-badge]][caddy-workflow-url] |
 | **[jenkinsapi](./jenkinsapi/)** | Jenkins + Python test environment | [![Docker Build][jenkins-workflow-badge]][jenkins-workflow-url] |
-| **[llm-bot](./llm-bot/)** | vLLM server for running 70B LLMs locally | [![Docker Build][llm-bot-workflow-badge]][llm-bot-workflow-url] |
+| **[ollama](./ollama/)** | vLLM server for running 70B LLMs locally | [![Docker Build][ollama-workflow-badge]][ollama-workflow-url] |
 
 ## Key Features
 
@@ -200,5 +200,5 @@ Each project is released under its respective license. See individual project RE
 [jenkins-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/jenkinsapi-build-optimized.yml?style=flat-square
 [jenkins-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/jenkinsapi-build-optimized.yml
 
-[llm-bot-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/llm-bot-build-optimized.yml?style=flat-square
-[llm-bot-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/llm-bot-build-optimized.yml
+[ollama-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/ollama-build-optimized.yml?style=flat-square
+[ollama-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/ollama-build-optimized.yml

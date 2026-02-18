@@ -25,7 +25,7 @@
   "disable_log_requests": true,
   "served_model_name": "llama-2-70b",
   "chat_template": null,
-  "api_key": "sk-llm-bot-local",
+  "api_key": "sk-ollama-local",
   "ssl_keyfile": null,
   "ssl_certfile": null,
   "ssl_ca_certs": null,

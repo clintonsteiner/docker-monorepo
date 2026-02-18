@@ -58,7 +58,7 @@ Once the vLLM server is running, configure Claude CLI to use it:
 ```bash
 # Set the API base URL
 export CLAUDE_API_BASE="http://localhost:8000/v1"
-export CLAUDE_API_KEY="sk-llm-bot-local"
+export CLAUDE_API_KEY="sk-ollama-local"
 export CLAUDE_MODEL="llama-2-70b"  # or your chosen model
 
 # Now use Claude CLI
@@ -71,7 +71,7 @@ claude chat
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key="sk-llm-bot-local",
+    api_key="sk-ollama-local",
     base_url="http://localhost:8000/v1"
 )
 
@@ -138,7 +138,7 @@ docker run -e MODEL_NAME="meta-llama/Llama-2-70b-hf" \
            -e DEVICE="cpu" \
            -e PORT="8000" \
            -e VLLM_LOGGING_LEVEL="INFO" \
-           llm-bot:latest
+           ollama:latest
 ```
 
 | Variable | Default | Description |
@@ -183,17 +183,17 @@ docker run -e MODEL_NAME="meta-llama/Llama-2-70b-hf" \
 
 2. **Memory Management**:
    ```bash
-   docker run --memory 48g --memswap 48g llm-bot:latest
+   docker run --memory 48g --memswap 48g ollama:latest
    ```
 
 3. **Reduce Max Sequence Length**:
    ```bash
-   docker run -e MAX_MODEL_LEN=2048 llm-bot:latest
+   docker run -e MAX_MODEL_LEN=2048 ollama:latest
    ```
 
 4. **Use Smaller Batch Size**:
    ```bash
-   docker run -e VLLM_NPROC_PER_NODE=1 llm-bot:latest
+   docker run -e VLLM_NPROC_PER_NODE=1 ollama:latest
    ```
 
 ### CPU Optimization
@@ -224,7 +224,7 @@ RuntimeError: CUDA out of memory
 
 **Solution**: Reduce `MAX_MODEL_LEN` or use a smaller model:
 ```bash
-docker run -e MAX_MODEL_LEN=2048 llm-bot:latest
+docker run -e MAX_MODEL_LEN=2048 ollama:latest
 ```
 
 ### Model Download Issues
@@ -241,7 +241,7 @@ make logs
 
 ```bash
 # Check if container is running
-docker ps | grep llm-bot
+docker ps | grep ollama
 
 # View logs for errors
 make logs
