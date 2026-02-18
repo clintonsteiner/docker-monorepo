@@ -1,7 +1,7 @@
 # Ollama - Simple, fast LLM server for Claude CLI
 # Built on official Ollama image with minimal overhead
 # hadolint ignore=DL3007
-FROM ollama/ollama:0.18.0
+FROM ollama/ollama:0.16.2
 
 # Health check for container orchestration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
