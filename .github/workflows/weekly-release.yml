@@ -56,6 +56,7 @@ jobs:
       - name: Trigger caddy build
         run: |
           gh workflow run caddy-cloudflaredns-build-optimized.yml \
+            --repo ${{ github.repository }} \
             --ref master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -63,6 +64,7 @@ jobs:
       - name: Trigger jenkins build
         run: |
           gh workflow run jenkinsapi-build-optimized.yml \
+            --repo ${{ github.repository }} \
             --ref master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -70,6 +72,7 @@ jobs:
       - name: Trigger ollama build
         run: |
           gh workflow run ollama-build-optimized.yml \
+            --repo ${{ github.repository }} \
             --ref master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

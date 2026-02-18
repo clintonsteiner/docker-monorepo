@@ -119,11 +119,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          {
-            echo "┌──────────────────────────────────────────────────┐"
-            echo "│        Jenkins Update Check Summary              │"
-            echo "└──────────────────────────────────────────────────┘"
-          }
+          echo "## Jenkins Update Check Summary"
           echo ""
           echo "Jenkins Version:"
           echo "  Current: ${{ steps.jenkins-version.outputs.current }}"
