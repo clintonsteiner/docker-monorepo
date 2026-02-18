@@ -4,9 +4,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { marked } from 'marked';
 
-const projects = ['caddy-cloudflaredns', 'jenkinsapi', 'ollama'];
-
 export async function getStaticPaths() {
+  const projects = ['caddy-cloudflaredns', 'jenkinsapi', 'ollama'];
   return projects.map((project) => ({
     params: { project },
   }));
