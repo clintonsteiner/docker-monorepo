@@ -1,17 +1,17 @@
-name: llm-bot - Build Once, Push Everywhere
+name: ollama - Build Once, Push Everywhere
 
 on:
   push:
     branches:
       - master
     paths:
-      - 'llm-bot/**'
-      - '.github/workflows/llm-bot-build-optimized.yml'
+      - 'ollama/**'
+      - '.github/workflows/ollama-build-optimized.yml'
   workflow_dispatch:
 
 env:
   DOCKER_USERNAME: clintonsteiner
-  DOCKER_CONTAINER_NAME: llm-bot
+  DOCKER_CONTAINER_NAME: ollama
   DOCKER_BUILDKIT: 1
   BUILDKIT_PROGRESS: plain
   BUILDKIT_INLINE_CACHE: 1
@@ -45,8 +45,8 @@ jobs:
           HASH=$(git rev-parse --short HEAD)
           echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
 
-          # Use vLLM version as tag
-          VERSION="1.0.0"
+          # Read version from ollama/VERSION file
+          VERSION=$(cat ollama/VERSION)
           echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
           echo "cache-tag=buildcache" >> $GITHUB_OUTPUT
 
@@ -62,11 +62,11 @@ jobs:
           fetch-depth: 1
 
       - name: Build and test image
-        working-directory: llm-bot
+        working-directory: ollama
         timeout-minutes: 5
         run: |
-          echo "Building llm-bot:test..."
-          docker build -t llm-bot:test .
+          echo "Building ollama:test..."
+          docker build -t ollama:test .
 
           echo "Running tests..."
           chmod +x test/test-image.sh
@@ -94,7 +94,7 @@ jobs:
       - name: Build & Push amd64 (single build, multiple tags)
         uses: docker/build-push-action@v6
         with:
-          context: ./llm-bot
+          context: ./ollama
           platforms: linux/amd64
           push: true
           tags: |
@@ -183,7 +183,7 @@ jobs:
       - name: Create Release (no rebuild, just metadata)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: llm-bot-${{ needs.prepare-tags.outputs.version-tag }}
+          tag_name: ollama-${{ needs.prepare-tags.outputs.version-tag }}
           draft: false
           prerelease: false
           body: |
@@ -195,7 +195,7 @@ jobs:
 
             ## Quick Start
             ```bash
-            docker run -d -p 8000:8000 clintonsteiner/llm-bot:latest
+            docker run -d -p 8000:8000 clintonsteiner/ollama:latest
             ```
 
-            See [README](llm-bot/README.md) for detailed setup instructions.
+            See [README](ollama/README.md) for detailed setup instructions.
