@@ -1,0 +1,105 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Contributing" description="How to contribute to the Docker monorepo">
+  <h1>Contributing to Docker Monorepo</h1>
+
+  <h2>Prerequisites</h2>
+
+  <ul>
+    <li>Docker (version 20.10 or later)</li>
+    <li>Git</li>
+    <li>Bash shell</li>
+    <li>Python 3.7+ (for pre-commit hooks)</li>
+  </ul>
+
+  <h2>Developer Setup</h2>
+
+  <pre><code>git clone https://github.com/clintonsteiner/docker-monorepo.git
+cd docker-monorepo
+
+pip install pre-commit
+pre-commit install
+
+make help                  # View available targets
+make test-all             # Run full test suite</code></pre>
+
+  <h2>Git Workflow</h2>
+
+  <ol>
+    <li>Create a feature branch: <code>git checkout -b feature/your-feature</code></li>
+    <li>Make your changes and test locally</li>
+    <li>Pre-commit hooks will run automatically on commit</li>
+    <li>Push and create a pull request</li>
+  </ol>
+
+  <h2>Testing</h2>
+
+  <pre><code>make test-all              # Run all tests
+make test-caddy            # Test specific project
+make test-jenkinsapi
+make test-ollama</code></pre>
+
+  <h2>Building Images</h2>
+
+  <pre><code>make build-all             # Build all images
+make build-caddy           # Build specific project
+make build-jenkinsapi
+make build-ollama</code></pre>
+
+  <h2>Pre-commit Hooks</h2>
+
+  <p>The project uses pre-commit hooks for code quality checks:</p>
+
+  <ul>
+    <li>Dockerfile linting (hadolint)</li>
+    <li>YAML validation (yamllint)</li>
+    <li>Markdown linting (markdownlint)</li>
+    <li>File hygiene (trailing whitespace, EOF newlines)</li>
+  </ul>
+
+  <p>To manually run checks:</p>
+
+  <pre><code>pre-commit run --all-files</code></pre>
+
+  <h2>CI/CD Pipeline</h2>
+
+  <p>When you push to GitHub:</p>
+
+  <ol>
+    <li>Tests run on all affected projects</li>
+    <li>Images are built for amd64 and arm64</li>
+    <li>Images are pushed to GHCR and Docker Hub</li>
+    <li>Multi-arch manifests are created</li>
+    <li>Releases are created with build metadata</li>
+  </ol>
+
+  <h2>Adding a New Project</h2>
+
+  <ol>
+    <li>Create project directory: <code>mkdir new-project && mkdir new-project/test</code></li>
+    <li>Copy Makefile template from existing project</li>
+    <li>Create <code>Dockerfile</code>, <code>README.md</code>, and <code>test/test-image.sh</code></li>
+    <li>Create <code>.github/workflows/new-project-build-optimized.yml</code></li>
+    <li>Update root <code>Makefile</code> with new targets</li>
+    <li>Update <code>.github/dependabot.yml</code> with new directory</li>
+  </ol>
+
+  <h2>Code Style</h2>
+
+  <ul>
+    <li>Use shell for scripts, Python for automation</li>
+    <li>Follow existing patterns in the codebase</li>
+    <li>Keep Dockerfiles efficient with multi-stage builds</li>
+    <li>Use BuildKit caching for faster rebuilds</li>
+    <li>Pin versions for reproducibility</li>
+  </ul>
+
+  <h2>Questions?</h2>
+
+  <p>
+    Check the <a href="/">main documentation</a> or open an issue on
+    <a href="https://github.com/clintonsteiner/docker-monorepo">GitHub</a>.
+  </p>
+</Layout>

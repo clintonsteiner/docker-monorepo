@@ -1,0 +1,22 @@
+{
+  "name": "docker-monorepo-docs",
+  "version": "1.0.0",
+  "description": "Docker monorepo documentation site",
+  "type": "module",
+  "scripts": {
+    "docs:dev": "astro dev",
+    "docs:build": "astro build",
+    "docs:preview": "astro preview"
+  },
+  "keywords": [
+    "docker",
+    "documentation",
+    "astro"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "astro": "^4.0.0"
+  },
+  "devDependencies": {}
+}

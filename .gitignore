@@ -18,3 +18,10 @@ test/*.log
 
 # Docker
 .dockerignore
+
+# Node.js and documentation
+node_modules/
+dist/
+.astro/
+*.log
+npm-debug.log*

@@ -1,0 +1,80 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Projects" description="Docker monorepo projects overview">
+  <h1>Projects</h1>
+
+  <p>The Docker monorepo contains the following projects:</p>
+
+  <h2>Caddy with Cloudflare DNS</h2>
+  <p>
+    A high-performance web server with the Cloudflare DNS module integrated. Perfect for scenarios
+    requiring automatic DNS management and high-performance request routing.
+  </p>
+  <p><a href="/projects/caddy/">View Caddy Documentation</a></p>
+
+  <h2>Jenkins API</h2>
+  <p>
+    Jenkins container with pre-configured plugins and a Python test environment for testing the
+    jenkinsapi library. Includes automated update checking for Jenkins versions and plugins.
+  </p>
+  <p><a href="/projects/jenkinsapi/">View Jenkins API Documentation</a></p>
+
+  <h2>Ollama LLM Server</h2>
+  <p>
+    CPU-optimized LLM inference server providing an OpenAI-compatible API. Configurable for
+    different memory and CPU constraints, perfect for local AI applications.
+  </p>
+  <p><a href="/projects/ollama/">View Ollama Documentation</a></p>
+
+  <h2>Build Information</h2>
+
+  <table>
+    <tr>
+      <th>Project</th>
+      <th>Status Badge</th>
+      <th>Docker Hub</th>
+    </tr>
+    <tr>
+      <td>caddy-cloudflaredns</td>
+      <td><code>clintonsteiner/caddy-cloudflaredns</code></td>
+      <td>Multi-arch (amd64, arm64)</td>
+    </tr>
+    <tr>
+      <td>jenkinsapi</td>
+      <td><code>clintonsteiner/jenkinsapi</code></td>
+      <td>Multi-arch (amd64, arm64)</td>
+    </tr>
+    <tr>
+      <td>ollama</td>
+      <td><code>clintonsteiner/ollama</code></td>
+      <td>Multi-arch (amd64, arm64)</td>
+    </tr>
+  </table>
+
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+    }
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 1rem;
+      text-align: left;
+    }
+
+    th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+
+    code {
+      background: #f3f4f6;
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.25rem;
+    }
+  </style>
+</Layout>

@@ -1,0 +1,130 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Docker Monorepo" description="Multi-project Docker repository with CI/CD automation">
+  <h1>Docker Monorepo</h1>
+
+  <p>
+    A production-ready Docker monorepo containing multiple containerized projects with shared CI/CD infrastructure,
+    automated testing, and multi-platform builds.
+  </p>
+
+  <h2>Projects</h2>
+
+  <div class="projects">
+    <div class="project-card">
+      <h3>Caddy with Cloudflare DNS</h3>
+      <p>
+        High-performance web server with Cloudflare DNS module for automatic DNS management.
+        Built with multi-stage Docker builds and aggressive caching.
+      </p>
+      <p>
+        <strong>Use Cases:</strong> Reverse proxy, API gateway, automatic HTTPS with DNS validation
+      </p>
+      <a href="/projects/caddy/">View Documentation</a>
+    </div>
+
+    <div class="project-card">
+      <h3>Jenkins API</h3>
+      <p>
+        Jenkins container with pre-installed plugins and Python test environment for running
+        jenkinsapi tests. Includes automated version and plugin update checking.
+      </p>
+      <p>
+        <strong>Use Cases:</strong> CI/CD automation, Jenkins plugin testing, Build orchestration
+      </p>
+      <a href="/projects/jenkinsapi/">View Documentation</a>
+    </div>
+
+    <div class="project-card">
+      <h3>Ollama LLM Server</h3>
+      <p>
+        CPU-optimized LLM inference server based on Ollama with OpenAI-compatible API.
+        Configurable memory and CPU usage for flexible deployment.
+      </p>
+      <p>
+        <strong>Use Cases:</strong> Local LLM inference, Claude CLI integration, AI applications
+      </p>
+      <a href="/projects/ollama/">View Documentation</a>
+    </div>
+  </div>
+
+  <h2>Features</h2>
+
+  <ul>
+    <li>Multi-platform builds (amd64 + arm64)</li>
+    <li>Automated CI/CD with GitHub Actions</li>
+    <li>Digest-based image tagging to avoid manifest lists</li>
+    <li>Parallel test execution with blocking tests</li>
+    <li>BuildKit layer caching for fast rebuilds</li>
+    <li>Automatic version and dependency updates</li>
+    <li>Pre-commit hooks for code quality</li>
+    <li>Multi-registry deployment (GHCR + Docker Hub)</li>
+  </ul>
+
+  <h2>Quick Start</h2>
+
+  <p>Clone the repository and explore the projects:</p>
+
+  <pre><code>git clone https://github.com/clintonsteiner/docker-monorepo.git
+cd docker-monorepo
+
+make help                    # See available targets
+make test-all              # Run all tests
+make build-all             # Build all images</code></pre>
+
+  <h2>Architecture</h2>
+
+  <p>The monorepo uses:</p>
+
+  <ul>
+    <li><strong>Per-project CI/CD:</strong> Separate workflows triggered only when project files change</li>
+    <li><strong>Build-once-reuse pattern:</strong> Each image is built once per platform, then reused across registries</li>
+    <li><strong>Digest-based tagging:</strong> Platform-specific tags point to single-arch images, not manifests</li>
+    <li><strong>Shared development tools:</strong> Pre-commit hooks, contributing guidelines, and shared Makefile patterns</li>
+  </ul>
+
+  <h2>Contributing</h2>
+
+  <p>
+    See <a href="/contributing/">Contributing Guide</a> for development setup, testing procedures,
+    and pull request guidelines.
+  </p>
+</Layout>
+
+<style>
+  .projects {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 2rem 0;
+  }
+
+  .project-card {
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    background: #f9fafb;
+  }
+
+  .project-card h3 {
+    margin-top: 0;
+    border: none;
+    padding: 0;
+  }
+
+  .project-card a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .project-card a:hover {
+    text-decoration: underline;
+  }
+
+  ul {
+    line-height: 1.8;
+  }
+</style>
