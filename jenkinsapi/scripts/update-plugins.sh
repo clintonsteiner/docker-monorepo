@@ -6,7 +6,7 @@ set -euo pipefail
 
 PLUGINS_FILE="./plugins.txt"
 TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf $TEMP_DIR' EXIT
 
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║          Jenkins Plugin Update Checker                         ║"

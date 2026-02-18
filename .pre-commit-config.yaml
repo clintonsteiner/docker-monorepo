@@ -1,10 +1,30 @@
+default_language_version:
+  python: python3
+
 repos:
+  # File hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
     rev: v2.14.0
     hooks:
       - id: hadolint-docker
-        args: ['--ignore=DL3008']
+        args:
+          - --ignore=DL3008
+          - --ignore=DL4001
 
+  # YAML linting
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.38.0
     hooks:
@@ -18,10 +38,15 @@ repos:
                 max: 180
               document-start: disable
               truthy: disable
+              indentation:
+                spaces: 2
+              comments:
+                min-spaces-from-content: 1
 
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-      - id: check-merge-conflict
+      - id: shellcheck
+        args: ['--severity=warning']
+        stages: [pre-commit]

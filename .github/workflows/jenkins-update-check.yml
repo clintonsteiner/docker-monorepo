@@ -13,7 +13,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Check Jenkins version updates
         id: jenkins-version
@@ -75,7 +75,7 @@ jobs:
 
       - name: Create issue for updates
         if: steps.jenkins-version.outputs.jenkins-update-available == 'true' || steps.plugins.outputs.plugin-update-available == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const jenkinsUpdate = ${{ steps.jenkins-version.outputs.jenkins-update-available }};

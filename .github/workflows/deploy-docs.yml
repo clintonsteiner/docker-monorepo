@@ -25,12 +25,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3563c81f5fb0f4e5a50ffdf75bbc9fbfa
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@1a4442caab616c98fa2b020e0768ddc71aa35464
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
@@ -43,7 +43,7 @@ jobs:
         run: npm run docs:build
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@835b5316443ea7434510467b3364e8e801f5df62
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           path: docs/dist
 
@@ -57,4 +57,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@9dbe3dd0f9e30a79e5e4c35ce3b2edb6e9cce889
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

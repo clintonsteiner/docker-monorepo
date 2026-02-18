@@ -20,10 +20,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3563c81f5fb0f4e5a50ffdf75bbc9fbfa
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Enable auto-merge for Dependabot PRs
-        uses: actions/github-script@7d8c85880fbf4ef596ebc10c45e05050e5ee23aee
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const pullRequest = context.payload.pull_request;

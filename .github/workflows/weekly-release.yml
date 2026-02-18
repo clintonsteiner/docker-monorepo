@@ -1,0 +1,127 @@
+name: Weekly Release - Auto Increment Minor Versions
+
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  weekly-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Increment versions and create release
+        id: release
+        run: |
+          #!/bin/bash
+          set -e
+
+          PROJECTS=("caddy-cloudflaredns" "jenkinsapi" "ollama")
+          UPDATED_PROJECTS=()
+
+          for project in "${PROJECTS[@]}"; do
+            echo "Processing $project..."
+
+            # Extract version based on project
+            case $project in
+              caddy-cloudflaredns)
+                CURRENT=$(grep "^FROM caddy:" "$project/Dockerfile" | head -1 | sed 's/.*:\([^-]*\).*/\1/')
+                ;;
+              jenkinsapi)
+                CURRENT=$(cat "$project/JENKINS_VERSION" | tr -d '\n')
+                ;;
+              ollama)
+                CURRENT=$(grep "^FROM" "$project/Dockerfile" | head -1 | awk '{print $2}' | sed 's/.*://g')
+                ;;
+            esac
+
+            echo "Current version for $project: $CURRENT"
+
+            # Increment minor version (assumes semantic versioning)
+            MAJOR=$(echo $CURRENT | cut -d. -f1)
+            MINOR=$(echo $CURRENT | cut -d. -f2)
+            PATCH=$(echo $CURRENT | cut -d. -f3)
+
+            # Handle cases where there's no patch version
+            if [ -z "$PATCH" ]; then
+              PATCH=0
+            fi
+
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+
+            echo "New version for $project: $NEW_VERSION"
+
+            # Update based on project
+            case $project in
+              caddy-cloudflaredns)
+                OLD_FROM=$(grep "^FROM caddy:" "$project/Dockerfile" | head -1)
+                NEW_FROM="FROM caddy:$NEW_VERSION-builder AS builder"
+                sed -i "s|^FROM caddy:.*-builder|$NEW_FROM|" "$project/Dockerfile"
+
+                # Also update the final stage
+                NEW_FROM_FINAL="FROM caddy:$NEW_VERSION"
+                sed -i "0,/^FROM caddy:[^-]*/s//FROM caddy:$NEW_VERSION/" "$project/Dockerfile"
+                ;;
+              jenkinsapi)
+                echo "$NEW_VERSION" > "$project/JENKINS_VERSION"
+                ;;
+              ollama)
+                # Update FROM line in Dockerfile
+                OLD_FROM=$(grep "^FROM" "$project/Dockerfile" | head -1)
+                NEW_FROM=$(echo "$OLD_FROM" | sed "s|:[^:]*$|:$NEW_VERSION|")
+                sed -i "s|^FROM.*|$NEW_FROM|" "$project/Dockerfile"
+                ;;
+            esac
+
+            UPDATED_PROJECTS+=("$project:$NEW_VERSION")
+          done
+
+          # Create commit and push
+          if [ ${#UPDATED_PROJECTS[@]} -gt 0 ]; then
+            git add caddy-cloudflaredns/Dockerfile jenkinsapi/JENKINS_VERSION ollama/Dockerfile 2>/dev/null || true
+
+            COMMIT_MSG="chore: weekly release - increment minor versions"
+            for item in "${UPDATED_PROJECTS[@]}"; do
+              COMMIT_MSG="$COMMIT_MSG"$'\n'"  - $item"
+            done
+
+            git commit -m "$COMMIT_MSG"
+            git push origin master
+
+            echo "releases=$(printf '%s\n' "${UPDATED_PROJECTS[@]}" | tr '\n' ',')" >> $GITHUB_OUTPUT
+            echo "Released: ${UPDATED_PROJECTS[@]}"
+          else
+            echo "No projects to update"
+            exit 1
+          fi
+
+      - name: Create GitHub Release Summary
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        if: success()
+        with:
+          script: |
+            const releases = '${{ steps.release.outputs.releases }}'.split(',').filter(Boolean);
+            const summary = releases.map(r => `  • ${r}`).join('\n');
+
+            console.log('Weekly Release Created:');
+            console.log(summary);
+
+            core.notice(`Weekly release created with minor version increments:\n${summary}`);
