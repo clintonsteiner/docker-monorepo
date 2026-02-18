@@ -100,7 +100,7 @@ jobs:
 
       - name: Login to registries
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
 
       - name: Build & Push amd64 (by digest, no manifest lists)
@@ -114,7 +114,7 @@ jobs:
             type=image,
             push-by-digest=true,
             name-canonical=true,
-            name=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}
+            name=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}
 
       - name: Tag amd64 by digest
         env:
@@ -124,11 +124,11 @@ jobs:
         run: |
           set -x
           for tag in "${HASH_TAG}" "${VERSION_TAG}" "latest" "stable"; do
-            docker tag "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
-              "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
-            docker push "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
+            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
+              "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
+            docker push "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
 
-            docker tag "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
+            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
               "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
             docker push "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
           done
@@ -154,7 +154,7 @@ jobs:
 
       - name: Login to registries
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
 
       - name: Build & Push arm64 (by digest, no manifest lists)
@@ -168,7 +168,7 @@ jobs:
             type=image,
             push-by-digest=true,
             name-canonical=true,
-            name=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}
+            name=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}
 
       - name: Tag arm64 by digest
         env:
@@ -178,11 +178,11 @@ jobs:
         run: |
           set -x
           for tag in "${HASH_TAG}" "${VERSION_TAG}" "latest" "stable"; do
-            docker tag "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
-              "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
-            docker push "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
+            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
+              "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
+            docker push "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
 
-            docker tag "${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
+            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
               "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
             docker push "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
           done
@@ -195,7 +195,7 @@ jobs:
     steps:
       - name: Set up Docker CLI
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
 
       - name: Create multi-arch manifests (reuse built images, no rebuild)
@@ -204,31 +204,31 @@ jobs:
 
           # Hash tag manifest
           docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
 
           # Version tag manifest
           docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }} \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }} \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}
 
           # Latest tag manifest
           docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
 
           # Stable tag manifest
           docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64 \
+            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
 
           # Repeat for Docker Hub
           docker manifest create \
