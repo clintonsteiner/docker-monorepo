@@ -82,7 +82,7 @@ jobs:
           echo "Verifying utilities..."
           docker run --rm jenkinsapi:test which curl ping
 
-          echo "✓ All tests passed"
+          echo " All tests passed"
 
   build-amd64:
     runs-on: ubuntu-latest

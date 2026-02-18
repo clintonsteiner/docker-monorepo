@@ -63,11 +63,11 @@ make test-all
 
 The test script verifies:
 
-- ✓ Image builds successfully
-- ✓ Caddy binary exists and is executable
-- ✓ Caddy version matches Dockerfile specification
-- ✓ Cloudflare DNS module is installed
-- ✓ Caddy configuration validation works
+-  Image builds successfully
+-  Caddy binary exists and is executable
+-  Caddy version matches Dockerfile specification
+-  Cloudflare DNS module is installed
+-  Caddy configuration validation works
 
 #### Manual Testing
 

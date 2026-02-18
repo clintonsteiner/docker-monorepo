@@ -14,7 +14,7 @@ echo "╚═══════════════════════�
 echo ""
 
 if [ ! -f "$PLUGINS_FILE" ]; then
-  echo "❌ $PLUGINS_FILE not found"
+  echo " $PLUGINS_FILE not found"
   exit 1
 fi
 
@@ -41,10 +41,10 @@ while IFS=: read -r plugin_name version; do
       echo "⬆️  $version → $latest"
       ((UPDATES_FOUND++))
     else
-      echo "✓"
+      echo ""
     fi
   else
-    echo "⚠ (couldn't check)"
+    echo " (couldn't check)"
   fi
 done < "$PLUGINS_FILE"
 
@@ -55,10 +55,10 @@ echo "  Updates available: $UPDATES_FOUND"
 echo ""
 
 if [ $UPDATES_FOUND -gt 0 ]; then
-  echo "💡 Tip: Use Jenkins Update Manager UI or update plugins.txt manually"
+  echo " Tip: Use Jenkins Update Manager UI or update plugins.txt manually"
   echo "   Then rebuild the Docker image: make build-jenkinsapi"
   exit 1
 else
-  echo "✓ All plugins are up to date!"
+  echo " All plugins are up to date!"
   exit 0
 fi

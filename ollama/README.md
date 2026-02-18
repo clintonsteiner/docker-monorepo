@@ -4,14 +4,14 @@ A Docker-based LLM inference server using [vLLM](https://github.com/vllm-project
 
 ## Features
 
-- 🚀 **vLLM**: Fast LLM inference engine with OpenAI-compatible API
-- 🧠 **70B Model Support**: Optimized for running Llama-2-70B on CPU with sufficient RAM
-- 💻 **CPU-Optimized**: Runs on systems with 40+ GB RAM (no GPU required)
-- 🔌 **OpenAI Compatible**: Works with Claude CLI, Python SDK, and other tools
-- 📦 **Model Selection**: Supports 7B, 13B, 70B, and custom HuggingFace models
-- ♻️ **Caching**: Built-in prefix caching for faster repeated requests
-- 🏥 **Health Checks**: Automatic health monitoring
-- 🔒 **Non-root User**: Runs as unprivileged user
+-  **vLLM**: Fast LLM inference engine with OpenAI-compatible API
+-  **70B Model Support**: Optimized for running Llama-2-70B on CPU with sufficient RAM
+-  **CPU-Optimized**: Runs on systems with 40+ GB RAM (no GPU required)
+-  **OpenAI Compatible**: Works with Claude CLI, Python SDK, and other tools
+-  **Model Selection**: Supports 7B, 13B, 70B, and custom HuggingFace models
+- ️ **Caching**: Built-in prefix caching for faster repeated requests
+-  **Health Checks**: Automatic health monitoring
+-  **Non-root User**: Runs as unprivileged user
 
 ## Quick Start
 
@@ -208,11 +208,11 @@ vLLM supports any model on HuggingFace Hub. Popular options:
 
 | Model | Size | RAM | Speed | Quality |
 |-------|------|-----|-------|---------|
-| Llama-2-7b | 7B | 5-8GB | ⚡⚡⚡⚡ | ⭐⭐⭐ |
-| Llama-2-13b | 13B | 10-16GB | ⚡⚡⚡ | ⭐⭐⭐⭐ |
-| Llama-2-70b | 70B | 40-50GB | ⚡⚡ | ⭐⭐⭐⭐⭐ |
-| Mistral-7B | 7B | 5-8GB | ⚡⚡⚡⚡ | ⭐⭐⭐⭐ |
-| CodeLlama-70b | 70B | 40-50GB | ⚡⚡ | ⭐⭐⭐⭐⭐ |
+| Llama-2-7b | 7B | 5-8GB |  |  |
+| Llama-2-13b | 13B | 10-16GB |  |  |
+| Llama-2-70b | 70B | 40-50GB |  |  |
+| Mistral-7B | 7B | 5-8GB |  |  |
+| CodeLlama-70b | 70B | 40-50GB |  |  |
 
 ## Troubleshooting
 

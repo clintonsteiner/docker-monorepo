@@ -1,6 +1,7 @@
 # Single stage build for Jenkins with pre-installed plugins
-# Use a recent LTS Jenkins version with JDK 21
-FROM jenkins/jenkins:lts-jdk25
+# Jenkins version is managed in JENKINS_VERSION file for consistency with CI/CD
+ARG JENKINS_VERSION=lts-jdk25
+FROM jenkins/jenkins:${JENKINS_VERSION}
 
 # Install system utilities with aggressive caching
 USER root

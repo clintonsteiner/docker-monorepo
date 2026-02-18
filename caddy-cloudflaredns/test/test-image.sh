@@ -25,18 +25,18 @@ trap cleanup EXIT
 # Note: Image is pre-built in workflow, just verify it exists
 echo -e "\n${YELLOW}Test 1: Verifying pre-built image...${NC}"
 if docker image inspect "$TEST_IMAGE" >/dev/null 2>&1; then
-  echo -e "${GREEN}✓ Image ready for testing${NC}"
+  echo -e "${GREEN} Image ready for testing${NC}"
 else
-  echo -e "${RED}✗ Image not found${NC}"
+  echo -e "${RED} Image not found${NC}"
   exit 1
 fi
 
 # Test 2: Verify Caddy binary exists and is executable
 echo -e "\n${YELLOW}Test 2: Verifying Caddy binary...${NC}"
 if docker run --rm "$TEST_IMAGE" test -x /usr/bin/caddy; then
-  echo -e "${GREEN}✓ Caddy binary exists and is executable${NC}"
+  echo -e "${GREEN} Caddy binary exists and is executable${NC}"
 else
-  echo -e "${RED}✗ Caddy binary not found or not executable${NC}"
+  echo -e "${RED} Caddy binary not found or not executable${NC}"
   exit 1
 fi
 
@@ -44,18 +44,18 @@ fi
 echo -e "\n${YELLOW}Test 3: Checking Caddy version...${NC}"
 ACTUAL_VERSION=$(docker run --rm "$TEST_IMAGE" /usr/bin/caddy version | grep -o 'v[0-9.]*' | sed 's/v//')
 if [[ "$ACTUAL_VERSION" == "$EXPECTED_VERSION" ]]; then
-  echo -e "${GREEN}✓ Caddy version matches: v${ACTUAL_VERSION}${NC}"
+  echo -e "${GREEN} Caddy version matches: v${ACTUAL_VERSION}${NC}"
 else
-  echo -e "${RED}✗ Version mismatch. Expected: ${EXPECTED_VERSION}, Got: ${ACTUAL_VERSION}${NC}"
+  echo -e "${RED} Version mismatch. Expected: ${EXPECTED_VERSION}, Got: ${ACTUAL_VERSION}${NC}"
   exit 1
 fi
 
 # Test 4: Verify Cloudflare DNS module is installed
 echo -e "\n${YELLOW}Test 4: Checking Cloudflare DNS module...${NC}"
 if docker run --rm "$TEST_IMAGE" /usr/bin/caddy list-modules | grep -q cloudflare; then
-  echo -e "${GREEN}✓ Cloudflare DNS module is installed${NC}"
+  echo -e "${GREEN} Cloudflare DNS module is installed${NC}"
 else
-  echo -e "${RED}✗ Cloudflare DNS module not found${NC}"
+  echo -e "${RED} Cloudflare DNS module not found${NC}"
   exit 1
 fi
 
@@ -65,9 +65,9 @@ TEST_CADDYFILE="localhost:2015
 respond \"Hello\""
 
 if echo "$TEST_CADDYFILE" | docker run --rm -e ACME_AGREE=true -i "$TEST_IMAGE" /usr/bin/caddy validate --config /dev/stdin --adapter caddyfile >/dev/null 2>&1; then
-  echo -e "${GREEN}✓ Caddy configuration validation works${NC}"
+  echo -e "${GREEN} Caddy configuration validation works${NC}"
 else
-  echo -e "${RED}✗ Caddy configuration validation failed${NC}"
+  echo -e "${RED} Caddy configuration validation failed${NC}"
   exit 1
 fi
 
