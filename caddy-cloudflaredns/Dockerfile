@@ -1,5 +1,5 @@
 # Stage 1: Build caddy with plugins (with aggressive caching)
-FROM caddy:2.13.0-builder AS builder
+FROM caddy:2.14.0-builder AS builder
 
 # Multi-layer caching for maximum speedup
 # hadolint ignore=DL3029
