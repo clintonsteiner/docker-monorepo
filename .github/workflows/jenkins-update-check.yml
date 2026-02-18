@@ -1,0 +1,126 @@
+name: Jenkins Update Check
+
+on:
+  schedule:
+    # Check for updates weekly (Sunday at 2 AM UTC)
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Jenkins version updates
+        id: jenkins-version
+        run: |
+          echo "Checking Jenkins LTS versions..."
+
+          # Get latest Jenkins LTS version
+          LATEST_LTS=$(curl -s https://repo.jenkins-ci.org/public/org/jenkins-ci/main/jenkins-war/maven-metadata.xml | \
+            grep -oP '(?<=<version>)[^<]*lts[^<]*' | tail -1 || echo "unknown")
+
+          CURRENT=$(cat jenkinsapi/JENKINS_VERSION)
+
+          echo "Current Jenkins version: $CURRENT"
+          echo "Latest Jenkins LTS: $LATEST_LTS"
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "latest=$LATEST_LTS" >> $GITHUB_OUTPUT
+
+          if [ "$CURRENT" != "$LATEST_LTS" ] && [ "$LATEST_LTS" != "unknown" ]; then
+            echo "jenkins-update-available=true" >> $GITHUB_OUTPUT
+          else
+            echo "jenkins-update-available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check plugin updates
+        id: plugins
+        working-directory: jenkinsapi
+        run: |
+          echo "Checking plugin updates..."
+
+          # Count total plugins
+          TOTAL_PLUGINS=$(wc -l < plugins.txt)
+
+          # Check for updates (lenient check - don't fail on curl errors)
+          UPDATES=0
+          while IFS=: read -r plugin version; do
+            if [ -z "$plugin" ]; then continue; fi
+            plugin=$(echo "$plugin" | xargs)
+            version=$(echo "$version" | xargs)
+
+            # Try to get latest version (skip if API fails)
+            if latest=$(curl -s -m 5 "https://plugins.jenkins.io/api/plugin/$plugin" 2>/dev/null | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4); then
+              if [ -n "$latest" ] && [ "$latest" != "$version" ]; then
+                ((UPDATES++))
+                echo "  $plugin: $version → $latest"
+              fi
+            fi
+          done < plugins.txt
+
+          echo "Total plugins: $TOTAL_PLUGINS"
+          echo "Updates available: $UPDATES"
+          echo "total-plugins=$TOTAL_PLUGINS" >> $GITHUB_OUTPUT
+          echo "updates-available=$UPDATES" >> $GITHUB_OUTPUT
+
+          if [ $UPDATES -gt 0 ]; then
+            echo "plugin-update-available=true" >> $GITHUB_OUTPUT
+          else
+            echo "plugin-update-available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue for updates
+        if: steps.jenkins-version.outputs.jenkins-update-available == 'true' || steps.plugins.outputs.plugin-update-available == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jenkinsUpdate = ${{ steps.jenkins-version.outputs.jenkins-update-available }};
+            const pluginUpdate = ${{ steps.plugins.outputs.plugin-update-available }};
+            const currentJenkins = '${{ steps.jenkins-version.outputs.current }}';
+            const latestJenkins = '${{ steps.jenkins-version.outputs.latest }}';
+            const pluginUpdates = ${{ steps.plugins.outputs.updates-available }};
+
+            let body = '## Jenkins Update Available\n\n';
+
+            if (jenkinsUpdate) {
+              body += `### Jenkins\n- Current: ${currentJenkins}\n- Latest: ${latestJenkins}\n\n`;
+            }
+
+            if (pluginUpdate) {
+              body += `### Plugins\n- ${pluginUpdates} plugin updates available\n- Total plugins: ${{ steps.plugins.outputs.total-plugins }}\n\n`;
+            }
+
+            body += '### Actions\n';
+            body += '1. Update Jenkins version in `jenkinsapi/JENKINS_VERSION` and `jenkinsapi/Dockerfile`\n';
+            body += '2. Run `make build-jenkinsapi` to rebuild with latest versions\n';
+            body += '3. Run tests to verify compatibility\n';
+            body += '4. Push changes and verify in GitHub Actions\n';
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Jenkins Update Available',
+              body: body,
+              labels: ['dependencies', 'jenkinsapi'],
+            });
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "╔════════════════════════════════════════════════════════════════╗"
+          echo "║              Jenkins Update Check Summary                      ║"
+          echo "╚════════════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "Jenkins Version:"
+          echo "  Current: ${{ steps.jenkins-version.outputs.current }}"
+          echo "  Latest:  ${{ steps.jenkins-version.outputs.latest }}"
+          echo "  Update:  ${{ steps.jenkins-version.outputs.jenkins-update-available }}"
+          echo ""
+          echo "Plugins:"
+          echo "  Total:   ${{ steps.plugins.outputs.total-plugins }}"
+          echo "  Updates: ${{ steps.plugins.outputs.updates-available }}"
+          echo "  Update:  ${{ steps.plugins.outputs.plugin-update-available }}"
