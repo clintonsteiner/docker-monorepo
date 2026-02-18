@@ -8,6 +8,7 @@ on:
     types: [submitted]
   check_suite:
     types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: write
