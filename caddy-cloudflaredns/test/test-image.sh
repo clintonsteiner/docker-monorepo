@@ -51,7 +51,8 @@ fi
 
 # Test 4: Verify Cloudflare DNS module is installed
 echo -e "\n${YELLOW}Test 4: Checking Cloudflare DNS module...${NC}"
-if docker run --rm "$TEST_IMAGE" /usr/bin/caddy list-modules | grep -q cloudflare; then
+MODULES=$(docker run --rm "$TEST_IMAGE" /usr/bin/caddy list-modules)
+if echo "$MODULES" | grep -q cloudflare; then
   echo -e "${GREEN} Cloudflare DNS module is installed${NC}"
 else
   echo -e "${RED} Cloudflare DNS module not found${NC}"
