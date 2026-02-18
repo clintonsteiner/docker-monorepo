@@ -18,42 +18,9 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  prepare-tags:
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      image-hash: ${{ steps.tags.outputs.image-hash }}
-      version-tag: ${{ steps.tags.outputs.version-tag }}
-      cache-tag: ${{ steps.tags.outputs.cache-tag }}
-      should-build: ${{ steps.detect.outputs.should-build }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 1
-
-      - name: Detect changes
-        id: detect
-        run: |
-          # Paths filter already ensures this workflow only triggers on relevant changes
-          # Always build if workflow is triggered (paths filter is the safeguard)
-          echo "should-build=true" >> $GITHUB_OUTPUT
-
-      - name: Generate tags
-        id: tags
-        run: |
-          HASH=$(git rev-parse --short HEAD)
-          echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
-
-          VERSION=$(grep "^FROM caddy:" caddy-cloudflaredns/Dockerfile | head -1 | sed 's/.*:\([^-]*\).*/\1/')
-          echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
-          echo "cache-tag=buildcache" >> $GITHUB_OUTPUT
-
   test:
     runs-on: ubuntu-latest
-    needs: prepare-tags
-    if: needs.prepare-tags.outputs.should-build == 'true'
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -62,7 +29,6 @@ jobs:
 
       - name: Build and test image
         working-directory: caddy-cloudflaredns
-        timeout-minutes: 5
         run: |
           echo "Building caddy-cloudflaredns:test..."
           docker build -t caddy-cloudflaredns:test .
@@ -71,135 +37,61 @@ jobs:
           chmod +x test/test-image.sh
           ./test/test-image.sh
 
-  build-amd64:
+  build:
     runs-on: ubuntu-latest
-    needs: [prepare-tags, test]
-    if: needs.prepare-tags.outputs.should-build == 'true'
-    timeout-minutes: 10
+    needs: test
+    timeout-minutes: 60
+    outputs:
+      image-hash: ${{ steps.meta.outputs.image-hash }}
+      version-tag: ${{ steps.meta.outputs.version-tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-
-      - name: Login to registries
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
-
-      - name: Build & Push amd64 (single build, multiple tags)
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
-        with:
-          context: ./caddy-cloudflaredns
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
-
-  build-arm64:
-    runs-on: ubuntu-latest
-    needs: [prepare-tags, test]
-    if: needs.prepare-tags.outputs.should-build == 'true'
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         with:
           platforms: arm64
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
       - name: Login to registries
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
 
-      - name: Build & Push arm64 (single build, multiple tags)
+      - name: Generate image metadata
+        id: meta
+        run: |
+          HASH=$(git rev-parse --short HEAD)
+          VERSION=$(cat caddy-cloudflaredns/VERSION)
+          echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
+          echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push multi-arch
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ./caddy-cloudflaredns
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
-
-  manifest:
-    runs-on: ubuntu-latest
-    needs: [prepare-tags, test, build-amd64, build-arm64]
-    if: needs.prepare-tags.outputs.should-build == 'true'
-    timeout-minutes: 5
-    steps:
-      - name: Set up Docker CLI
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
-
-      - name: Create multi-arch manifests (reuse built images, no rebuild)
-        run: |
-          # Use prebuilt images - no rebuild needed
-
-          # Hash tag manifest
-          docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
-
-          # Version tag manifest
-          docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }} \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}
-
-          # Latest tag manifest
-          docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
-
-          # Stable tag manifest
-          docker manifest create \
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64 \
-            --amend ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
-          docker manifest push ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
-
-          # Repeat for Docker Hub
-          docker manifest create \
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
-            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64 \
-            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
-          docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ steps.meta.outputs.image-hash }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ steps.meta.outputs.version-tag }}
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ steps.meta.outputs.image-hash }}
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ steps.meta.outputs.version-tag }}
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache,mode=max
 
   release:
     runs-on: ubuntu-latest
-    needs: [prepare-tags, manifest]
-    if: needs.prepare-tags.outputs.should-build == 'true'
+    needs: build
     timeout-minutes: 3
     steps:
       - name: Checkout
@@ -207,13 +99,13 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Create Release (no rebuild, just metadata)
+      - name: Create Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          tag_name: ${{ needs.prepare-tags.outputs.version-tag }}
+          tag_name: ${{ needs.build.outputs.version-tag }}
           draft: false
           prerelease: false
           body: |
-            - Hash: ${{ needs.prepare-tags.outputs.image-hash }}
-            - Built with: parallel amd64 + arm64 builds
+            - Hash: ${{ needs.build.outputs.image-hash }}
+            - Built with: linux/amd64, linux/arm64
             - Tags: hash, version, latest, stable
