@@ -1,0 +1,47 @@
+# Docker image for running Python tests with all dependencies pre-installed
+# This image pre-bakes all setup steps to speed up CI/CD test execution
+
+FROM python:3.13-slim
+
+# Set shell options for safety
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Set working directory
+WORKDIR /workspace
+
+# Install system dependencies ahead of time
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libkrb5-dev=1.20.1-2+deb12u1 \
+    gcc=4:12.2.0-3 \
+    git=1:2.40.0-1.1 \
+    curl=7.88.1-10+deb12u8 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv - faster Python package manager
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    mv /root/.local/bin/uv /usr/local/bin/uv
+
+# Create a virtual environment
+RUN uv venv /venv
+ENV PATH="/venv/bin:$PATH"
+
+# Copy pyproject.toml to install dependencies
+COPY pyproject.toml .
+
+# Install Python dependencies from dev group ahead of time
+# This caches the dependency layer so tests run immediately
+RUN uv pip install -e ".[dev]" && \
+    uv pip install \
+    pytest-xdist \
+    pytest-cov \
+    pytest-mock \
+    pytest-timeout \
+    pyyaml
+
+# Set Python path
+ENV PYTHONPATH=/workspace:$PYTHONPATH
+
+# Default command - can be overridden to run tests
+CMD ["pytest", "-v", "jenkinsapi_tests"]

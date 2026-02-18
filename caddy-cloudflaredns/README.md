@@ -4,7 +4,10 @@
 
 # caddy-cloudflaredns
 
-A Docker image for [Caddy](https://caddyserver.com/) with built-in support for DNS validation using [Cloudflare DNS](https://www.cloudflare.com/). This image enables automatic TLS certificate generation and renewal for domains managed on Cloudflare.
+A Docker image for [Caddy](https://caddyserver.com/) with built-in support for
+DNS validation using [Cloudflare DNS](https://www.cloudflare.com/). This image
+enables automatic TLS certificate generation and renewal for domains managed on
+Cloudflare.
 
 **Please see the official [Caddy Docker Image](https://hub.docker.com/_/caddy) for general deployment instructions.**
 
@@ -185,11 +188,13 @@ docker logs -f caddy
 
 ## Contributing
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for development setup, testing guidelines, and the pull request process.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for development setup, testing
+guidelines, and the pull request process.
 
 ## License
 
-This project is released under the same license as Caddy. See the [Caddy repository](https://github.com/caddyserver/caddy) for details.
+This project is released under the same license as Caddy. See the
+[Caddy repository](https://github.com/caddyserver/caddy) for details.
 
 ## References
 

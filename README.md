@@ -1,12 +1,14 @@
 # Docker Monorepo
 
-A monorepo structure for managing multiple Docker image projects with shared CI/CD workflows, pre-commit hooks, and development tools.
+A monorepo structure for managing multiple Docker image projects with shared
+CI/CD workflows, pre-commit hooks, and development tools.
 
 ## Projects
 
 | Project | Description | Status |
 |---------|-------------|--------|
-| **[caddy-cloudflaredns](./caddy-cloudflaredns/)** | Caddy with Cloudflare DNS module for automatic TLS via ACME DNS-01 challenge | [![Docker Build][caddy-workflow-badge]][caddy-workflow-url] |
+| **[caddy-cloudflaredns](./caddy-cloudflaredns/)** | Caddy + Cloudflare DNS for automatic TLS | [![Docker Build][caddy-workflow-badge]][caddy-workflow-url] |
+| **[jenkinsapi](./jenkinsapi/)** | Jenkins + Python test environment | [![Docker Build][jenkins-workflow-badge]][jenkins-workflow-url] |
 
 ## Key Features
 
@@ -73,7 +75,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing guidelines
 
 ### caddy-cloudflaredns
 
-A Docker image for [Caddy](https://caddyserver.com/) with built-in support for DNS validation using Cloudflare DNS. This enables automatic TLS certificate generation and renewal for domains managed on Cloudflare.
+A Docker image for [Caddy](https://caddyserver.com/) with built-in support for
+DNS validation using Cloudflare DNS. This enables automatic TLS certificate
+generation and renewal for domains managed on Cloudflare.
 
 - **Repository**: [caddy-cloudflaredns](./caddy-cloudflaredns/)
 - **Docker Hub**: `docker.io/clintonsteiner/caddy-cloudflaredns`
@@ -81,6 +85,18 @@ A Docker image for [Caddy](https://caddyserver.com/) with built-in support for D
 - **Quay Container Registry**: `quay.io/clintonsteiner/caddy-cloudflaredns`
 
 [Learn more about caddy-cloudflaredns →](./caddy-cloudflaredns/README.md)
+
+### jenkinsapi
+
+Production-ready Jenkins with pre-configured plugins and a Python test environment for running jenkinsapi tests.
+
+- **Repository**: [jenkinsapi](./jenkinsapi/)
+- **Images**:
+  - `jenkinsapi:latest` - Jenkins LTS with pre-installed plugins
+  - `jenkinsapi-test:latest` - Python test environment for pytest
+- **GitHub Container Registry**: `ghcr.io/clintonsteiner/jenkinsapi`
+
+[Learn more about jenkinsapi →](./jenkinsapi/README.md)
 
 ## Adding a New Project
 
@@ -100,6 +116,7 @@ See [CONTRIBUTING.md#adding-a-new-project](CONTRIBUTING.md#adding-a-new-project)
 ### Workflow Triggering
 
 Each project has its own GitHub Actions workflow file that triggers only when:
+
 - Changes are pushed to the `main` branch
 - Files within the project directory change (using `paths:` filter)
 - The workflow is manually dispatched
@@ -119,6 +136,7 @@ on:
 ### Dependency Updates
 
 [Dependabot](https://docs.github.com/en/code-security/dependabot) automatically checks for updates to:
+
 - Docker base images (per project)
 - GitHub Actions
 
@@ -175,3 +193,6 @@ Each project is released under its respective license. See individual project RE
 
 [caddy-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/caddy-cloudflaredns.yml?style=flat-square
 [caddy-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/caddy-cloudflaredns.yml
+
+[jenkins-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/jenkinsapi.yml?style=flat-square
+[jenkins-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/jenkinsapi.yml

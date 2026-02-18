@@ -1,6 +1,7 @@
 # Contributing to Docker Monorepo
 
-Thank you for your interest in contributing! This document provides guidelines for development, testing, and submitting pull requests.
+Thank you for your interest in contributing! This document provides guidelines
+for development, testing, and submitting pull requests.
 
 ## Prerequisites
 
@@ -145,6 +146,7 @@ git checkout -b feature/your-feature-name
 ```
 
 Use descriptive branch names:
+
 - `feature/add-xyz` - New functionality
 - `fix/issue-xyz` - Bug fixes
 - `docs/update-xyz` - Documentation updates
