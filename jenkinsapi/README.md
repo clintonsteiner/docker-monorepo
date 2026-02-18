@@ -147,6 +147,59 @@ make help              # Display help
 | `8080` | Jenkins web interface |
 | `50000` | Jenkins agent (SSH slave) connections |
 
+## Version Management
+
+### Jenkins Version
+
+The Jenkins version is managed through the `JENKINS_VERSION` file:
+
+```bash
+# View current Jenkins version
+cat JENKINS_VERSION
+
+# Update Jenkins version
+echo "lts-jdk25" > JENKINS_VERSION
+make build
+```
+
+The version is automatically read during the build process and passed as a build argument.
+
+### Plugin Updates
+
+To check for available plugin updates:
+
+```bash
+# Run the update checker script
+./scripts/update-plugins.sh
+```
+
+This script will:
+- Query the Jenkins plugins API for each plugin
+- Display current vs. available versions
+- Count total plugins and updates available
+- Provide guidance on updating plugins
+
+To update plugins manually:
+
+1. Check for updates: `./scripts/update-plugins.sh`
+2. Update versions in `plugins.txt`
+3. Rebuild the image: `make build`
+4. Test the build: `make test`
+
+### Automated Update Checks
+
+The monorepo includes a GitHub Actions workflow that automatically checks for Jenkins and plugin updates weekly:
+
+- **Workflow**: `.github/workflows/jenkins-update-check.yml`
+- **Schedule**: Runs every Sunday at 2 AM UTC
+- **Trigger**: Can also be manually triggered via workflow_dispatch
+- **Actions**: Creates GitHub issues when updates are available
+
+The workflow output includes:
+- Current vs. latest Jenkins LTS version
+- Count of available plugin updates
+- Detailed action items for updating
+
 ## Plugins Included
 
 The Jenkins image includes pre-configured plugins for:

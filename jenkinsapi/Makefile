@@ -2,6 +2,7 @@
 
 JENKINS_IMAGE := jenkinsapi:test
 TEST_IMAGE := jenkinsapi-test:test
+JENKINS_VERSION := $(shell cat JENKINS_VERSION | tr -d '\n')
 
 help:
 	@echo "Available targets:"
@@ -34,7 +35,8 @@ pre-commit:
 
 build:
 	@echo "Building Jenkins Docker image: $(JENKINS_IMAGE)"
-	docker build -t $(JENKINS_IMAGE) -f Dockerfile .
+	@echo "Jenkins version: $(JENKINS_VERSION)"
+	docker build -t $(JENKINS_IMAGE) --build-arg JENKINS_VERSION=$(JENKINS_VERSION) -f Dockerfile .
 	@echo "✓ Jenkins image built successfully"
 
 build-test:
