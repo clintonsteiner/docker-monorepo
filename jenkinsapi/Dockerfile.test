@@ -1,7 +1,7 @@
 # Docker image for running Python tests with all dependencies pre-installed
 # This image pre-bakes all setup steps to speed up CI/CD test execution
 
-FROM python:3.13-slim
+FROM python:3.14-slim
 
 # Set shell options for safety
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
