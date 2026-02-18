@@ -54,7 +54,9 @@ jobs:
             version=$(echo "$version" | xargs)
 
             # Try to get latest version (skip if API fails)
-            if latest=$(curl -s -m 5 "https://plugins.jenkins.io/api/plugin/$plugin" 2>/dev/null | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4); then
+            if latest=$(curl -s -m 5 \
+              "https://plugins.jenkins.io/api/plugin/$plugin" 2>/dev/null \
+              | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4); then
               if [ -n "$latest" ] && [ "$latest" != "$version" ]; then
                 ((UPDATES++))
                 echo "  $plugin: $version → $latest"
@@ -74,8 +76,10 @@ jobs:
           fi
 
       - name: Create issue for updates
-        if: steps.jenkins-version.outputs.jenkins-update-available == 'true' || steps.plugins.outputs.plugin-update-available == 'true'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        if: |
+          steps.jenkins-version.outputs.jenkins-update-available == 'true' ||
+          steps.plugins.outputs.plugin-update-available == 'true'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             const jenkinsUpdate = ${{ steps.jenkins-version.outputs.jenkins-update-available }};
@@ -87,11 +91,15 @@ jobs:
             let body = '## Jenkins Update Available\n\n';
 
             if (jenkinsUpdate) {
-              body += `### Jenkins\n- Current: ${currentJenkins}\n- Latest: ${latestJenkins}\n\n`;
+              body += `### Jenkins\n`;
+              body += `- Current: ${currentJenkins}\n`;
+              body += `- Latest: ${latestJenkins}\n\n`;
             }
 
             if (pluginUpdate) {
-              body += `### Plugins\n- ${pluginUpdates} plugin updates available\n- Total plugins: ${{ steps.plugins.outputs.total-plugins }}\n\n`;
+              body += `### Plugins\n`;
+              body += `- ${pluginUpdates} plugin updates available\n`;
+              body += `- Total plugins: ${{ steps.plugins.outputs.total-plugins }}\n\n`;
             }
 
             body += '### Actions\n';
@@ -111,9 +119,11 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "╔════════════════════════════════════════════════════════════════╗"
-          echo "║              Jenkins Update Check Summary                      ║"
-          echo "╚════════════════════════════════════════════════════════════════╝"
+          {
+            echo "┌──────────────────────────────────────────────────┐"
+            echo "│        Jenkins Update Check Summary              │"
+            echo "└──────────────────────────────────────────────────┘"
+          }
           echo ""
           echo "Jenkins Version:"
           echo "  Current: ${{ steps.jenkins-version.outputs.current }}"

@@ -1,0 +1,142 @@
+name: Check and Update Base Image Versions
+
+on:
+  schedule:
+    # Check daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        project:
+          - name: caddy-cloudflaredns
+            image: caddy
+            dockerfile: caddy-cloudflaredns/Dockerfile
+          - name: jenkinsapi
+            image: jenkins
+            dockerfile: jenkinsapi/Dockerfile
+          - name: ollama
+            image: ollama/ollama
+            dockerfile: ollama/Dockerfile
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Get latest version for ${{ matrix.project.name }}
+        id: latest
+        run: |
+          IMAGE="${{ matrix.project.image }}"
+
+          # Fetch latest stable version from Docker Hub
+          if [ "$IMAGE" = "caddy" ]; then
+            LATEST=$(curl -s \
+              https://registry.hub.docker.com/v2/repositories/library/caddy/tags \
+              | jq -r '.results[] | select(.name | test("^[0-9]+\\.[0-9]+")) | .name' \
+              | grep -v "alpine" | sort -V | tail -1)
+          elif [ "$IMAGE" = "jenkins" ]; then
+            LATEST=$(curl -s \
+              https://registry.hub.docker.com/v2/repositories/library/jenkins/tags \
+              | jq -r '.results[] | select(.name | test("lts")) | .name' \
+              | head -1)
+          else
+            LATEST=$(curl -s \
+              https://registry.hub.docker.com/v2/repositories/ollama/ollama/tags \
+              | jq -r '.results[0].name')
+          fi
+
+          echo "latest=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest $IMAGE: $LATEST"
+
+      - name: Get current version for ${{ matrix.project.name }}
+        id: current
+        run: |
+          FILE="${{ matrix.project.dockerfile }}"
+          CURRENT=$(grep "^FROM" "$FILE" | head -1 | \
+            awk '{print $2}' | sed 's/.*://g')
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          LATEST="${{ steps.latest.outputs.latest }}"
+          CURRENT="${{ steps.current.outputs.current }}"
+
+          if [ "$LATEST" != "$CURRENT" ] && [ -n "$LATEST" ]; then
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+            echo "Update available: $CURRENT → $LATEST"
+          else
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update ${{ matrix.project.name }} Dockerfile
+        if: steps.compare.outputs.needs_update == 'true'
+        run: |
+          FILE="${{ matrix.project.dockerfile }}"
+          IMAGE="${{ matrix.project.image }}"
+          LATEST="${{ steps.latest.outputs.latest }}"
+
+          # Get the base image name
+          BASE_IMAGE=$(grep "^FROM" "$FILE" | head -1 | awk '{print $2}' | cut -d: -f1)
+
+          # Update all FROM lines with this image
+          sed -i "s|FROM ${BASE_IMAGE}:.*|FROM ${BASE_IMAGE}:${LATEST}|g" "$FILE"
+
+          echo "✓ Updated $FILE to $LATEST"
+          cat "$FILE" | grep "^FROM"
+
+      - name: Configure Git
+        if: steps.compare.outputs.needs_update == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create PR for ${{ matrix.project.name }}
+        if: steps.compare.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@5e914681df9dc003fdede1ccbc4d51c32fad5524
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update ${{ matrix.project.name }} base image
+
+            Update to ${{ steps.latest.outputs.latest }}
+          branch: >-
+            chore/${{ matrix.project.name }}-update-${{ steps.latest.outputs.latest }}
+          title: >-
+            chore: update ${{ matrix.project.name }} to ${{ steps.latest.outputs.latest }}
+          body: |
+            ## Base Image Update
+
+            Automatic update to latest stable version.
+
+            **Project:** ${{ matrix.project.name }}
+            **Current:** ${{ steps.current.outputs.current }}
+            **Latest:** ${{ steps.latest.outputs.latest }}
+
+            This will trigger the build workflow automatically.
+          labels: |
+            dependencies
+            ${{ matrix.project.name }}
+          delete-branch: true
+
+      - name: Summary
+        run: |
+          NEEDS_UPDATE="${{ steps.compare.outputs.needs_update }}"
+          PROJECT="${{ matrix.project.name }}"
+          CURRENT="${{ steps.current.outputs.current }}"
+          LATEST="${{ steps.latest.outputs.latest }}"
+
+          if [ "$NEEDS_UPDATE" = "true" ]; then
+            echo "✓ $PROJECT: Update available"
+            echo "  $CURRENT → $LATEST"
+          else
+            echo "✓ $PROJECT: Already up to date ($CURRENT)"
+          fi
