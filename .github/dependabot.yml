@@ -31,3 +31,19 @@ updates:
       interval: "weekly"
     assignees:
       - "clintonsteiner"
+
+  # Python dependencies for jenkinsapi
+  - package-ecosystem: "pip"
+    directory: "/jenkinsapi"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "clintonsteiner"
+
+  # NPM dependencies for documentation
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "clintonsteiner"
