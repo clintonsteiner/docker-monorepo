@@ -57,10 +57,14 @@ jobs:
           echo "jenkins_version=$jenkins_new" >> $GITHUB_OUTPUT
 
           # Extract and increment version for ollama
-          ollama_current=$(grep "^FROM" ollama/Dockerfile | head -1 | \
-            awk '{print $2}' | sed 's/.*://g')
+          ollama_from=$(grep "^FROM" ollama/Dockerfile | head -1)
+          ollama_image=$(echo "$ollama_from" | awk '{print $2}' | cut -d: -f1)
+          ollama_current=$(echo "$ollama_from" | awk '{print $2}' | cut -d: -f2)
           IFS='.' read -r maj min patch <<< "$ollama_current"
           ollama_new="$maj.$((min + 1)).0"
+          # Update ollama Dockerfile with new version
+          sed -i "s|FROM ${ollama_image}:.*|FROM ${ollama_image}:${ollama_new}|" \
+            ollama/Dockerfile
           echo "ollama_version=$ollama_new" >> $GITHUB_OUTPUT
 
           echo "New versions:"
@@ -82,7 +86,9 @@ jobs:
         if: steps.detect.outputs.has_changes == 'true'
         shell: bash
         run: |
-          git add caddy-cloudflaredns/Dockerfile jenkinsapi/JENKINS_VERSION
+          git add caddy-cloudflaredns/Dockerfile \
+                  jenkinsapi/JENKINS_VERSION \
+                  ollama/Dockerfile
           cat > /tmp/commit_msg.txt << 'EOF'
           chore: weekly release - increment minor versions
 
