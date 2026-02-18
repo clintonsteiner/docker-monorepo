@@ -104,8 +104,10 @@ jobs:
           tags: |
             ghcr.io/${{ github.actor }}/jenkinsapi:${{ steps.prepare.outputs.version }}
             ghcr.io/${{ github.actor }}/jenkinsapi:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/${{ github.actor }}/jenkinsapi:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.actor }}/jenkinsapi:buildcache,mode=max
 
       - name: Build and Push test image
         uses: docker/build-push-action@v6
@@ -114,8 +116,10 @@ jobs:
           file: ./jenkinsapi/Dockerfile.test
           platforms: linux/amd64,linux/arm64
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/${{ github.actor }}/jenkinsapi-test:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.actor }}/jenkinsapi-test:buildcache,mode=max
           tags: |
             ghcr.io/${{ github.actor }}/jenkinsapi-test:${{ steps.prepare.outputs.version }}
             ghcr.io/${{ github.actor }}/jenkinsapi-test:latest

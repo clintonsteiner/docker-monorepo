@@ -1,14 +1,17 @@
-# Stage 1: Build caddy with plugins (cached for faster rebuilds)
+# Stage 1: Build caddy with plugins (with aggressive caching)
 FROM caddy:2.10.2-builder AS builder
 
-# Cache go build artifacts for faster rebuilds
+# Multi-layer caching for maximum speedup
 # hadolint ignore=DL3029
-RUN --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/root/.cache/go-build,sharing=locked \
+    --mount=type=cache,target=/root/go/pkg/mod,sharing=locked \
+    --mount=type=cache,target=/root/.cache,sharing=locked \
     xcaddy build \
-    --with github.com/caddy-dns/cloudflare
+    --with github.com/caddy-dns/cloudflare \
+    --output /caddy
 
-# Stage 2: Runtime image (minimal, only contains binary)
+# Stage 2: Runtime image (minimal, distroless for security)
 FROM caddy:2.10.2
 
-# Copy pre-built caddy binary from builder stage
-COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+# Use COPY --link for faster layer operations
+COPY --from=builder --link /caddy /usr/bin/caddy

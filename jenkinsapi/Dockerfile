@@ -2,10 +2,11 @@
 # Use a recent LTS Jenkins version with JDK 21
 FROM jenkins/jenkins:lts-jdk25
 
-# Install system utilities and setup Jenkins
+# Install system utilities with aggressive caching
 USER root
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,target=/root/.cache,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
@@ -13,12 +14,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     mkdir -p /var/jenkins_home && \
     chmod 777 /var/jenkins_home
 
-# Copy plugins.txt and entrypoint script early for better layer caching
-COPY plugins.txt /tmp/plugins.txt
-COPY jenkins-entrypoint.sh /usr/local/bin/jenkins-entrypoint.sh
+# Copy all setup files (reordered for optimal caching)
+COPY --link jenkins-entrypoint.sh /usr/local/bin/jenkins-entrypoint.sh
+COPY --link plugins.txt /tmp/plugins.txt
 
-# Install plugins and setup entrypoint in single layer
-RUN jenkins-plugin-cli --plugin-file /tmp/plugins.txt --verbose --latest=false && \
+# Install plugins and setup entrypoint with caching
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    jenkins-plugin-cli --plugin-file /tmp/plugins.txt --verbose --latest=false && \
     chmod +x /usr/local/bin/jenkins-entrypoint.sh
 
 USER jenkins
