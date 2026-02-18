@@ -64,7 +64,7 @@ echo -e "\n${YELLOW}Test 5: Testing Caddy configuration validation...${NC}"
 TEST_CADDYFILE="localhost:2015
 respond \"Hello\""
 
-if echo "$TEST_CADDYFILE" | docker run --rm -e ACME_AGREE=true -i "$TEST_IMAGE" /usr/bin/caddy validate --config /dev/stdin >/dev/null 2>&1; then
+if echo "$TEST_CADDYFILE" | docker run --rm -e ACME_AGREE=true -i "$TEST_IMAGE" /usr/bin/caddy validate --config /dev/stdin --adapter caddyfile >/dev/null 2>&1; then
   echo -e "${GREEN}✓ Caddy configuration validation works${NC}"
 else
   echo -e "${RED}✗ Caddy configuration validation failed${NC}"
