@@ -8,7 +8,7 @@ for development, testing, and submitting pull requests.
 - Docker (version 20.10 or later)
 - Bash shell
 - Git
-- Python 3.7+ (for pre-commit hooks)
+- uv (Python package manager) - [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ## Developer Setup
 
@@ -24,7 +24,7 @@ cd docker-monorepo
 Pre-commit hooks automatically validate code quality on every commit:
 
 ```bash
-pip install pre-commit
+uv tool install pre-commit
 pre-commit install
 ```
 

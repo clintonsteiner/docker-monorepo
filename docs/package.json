@@ -16,7 +16,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "astro": "^4.0.0"
+    "astro": "^4.0.0",
+    "marked": "^11.0.0"
   },
   "devDependencies": {}
 }

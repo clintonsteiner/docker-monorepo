@@ -1,0 +1,126 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { marked } from 'marked';
+
+const projects = ['caddy-cloudflaredns', 'jenkinsapi', 'ollama'];
+
+export async function getStaticPaths() {
+  return projects.map((project) => ({
+    params: { project },
+  }));
+}
+
+const { project } = Astro.params;
+const readmePath = join(process.cwd(), '..', project, 'README.md');
+
+let content = '';
+let title = project;
+
+try {
+  const markdown = readFileSync(readmePath, 'utf-8');
+  content = marked(markdown);
+  // Extract title from first H1
+  const titleMatch = markdown.match(/^# (.+)$/m);
+  if (titleMatch) {
+    title = titleMatch[1];
+  }
+} catch (error) {
+  content = `<p>Error loading README for ${project}</p>`;
+}
+---
+
+<Layout title={title} description={`${project} documentation`}>
+  <div class="readme-content">
+    <Fragment set:html={content} />
+  </div>
+</Layout>
+
+<style>
+  .readme-content {
+    line-height: 1.6;
+  }
+
+  .readme-content :global(h1) {
+    color: #3b82f6;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+    margin-top: 0;
+  }
+
+  .readme-content :global(h2) {
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .readme-content :global(h3),
+  .readme-content :global(h4),
+  .readme-content :global(h5),
+  .readme-content :global(h6) {
+    color: #374151;
+    margin-top: 1rem;
+  }
+
+  .readme-content :global(pre) {
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    font-size: 0.875rem;
+  }
+
+  .readme-content :global(code) {
+    background: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+  }
+
+  .readme-content :global(pre code) {
+    background: none;
+    padding: 0;
+  }
+
+  .readme-content :global(blockquote) {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin-left: 0;
+    color: #6b7280;
+  }
+
+  .readme-content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+  }
+
+  .readme-content :global(th),
+  .readme-content :global(td) {
+    border: 1px solid #e5e7eb;
+    padding: 0.75rem;
+    text-align: left;
+  }
+
+  .readme-content :global(th) {
+    background: #f3f4f6;
+    font-weight: 600;
+  }
+
+  .readme-content :global(a) {
+    color: #3b82f6;
+    text-decoration: none;
+  }
+
+  .readme-content :global(a:hover) {
+    text-decoration: underline;
+  }
+
+  .readme-content :global(img) {
+    max-width: 100%;
+    height: auto;
+  }
+</style>

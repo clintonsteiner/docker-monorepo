@@ -37,7 +37,7 @@ help:
 
 install-hooks:
 	@echo "Installing pre-commit hooks..."
-	pip install pre-commit
+	uv tool install pre-commit
 	pre-commit install
 	@echo "✓ Pre-commit hooks installed"
 
