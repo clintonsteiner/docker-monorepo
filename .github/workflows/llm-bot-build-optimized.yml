@@ -1,0 +1,201 @@
+name: llm-bot - Build Once, Push Everywhere
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'llm-bot/**'
+      - '.github/workflows/llm-bot-build-optimized.yml'
+  workflow_dispatch:
+
+env:
+  DOCKER_USERNAME: clintonsteiner
+  DOCKER_CONTAINER_NAME: llm-bot
+  DOCKER_BUILDKIT: 1
+  BUILDKIT_PROGRESS: plain
+  BUILDKIT_INLINE_CACHE: 1
+  REGISTRY: ghcr.io
+
+jobs:
+  prepare-tags:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      image-hash: ${{ steps.tags.outputs.image-hash }}
+      version-tag: ${{ steps.tags.outputs.version-tag }}
+      cache-tag: ${{ steps.tags.outputs.cache-tag }}
+      should-build: ${{ steps.detect.outputs.should-build }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Detect changes
+        id: detect
+        run: |
+          # Paths filter already ensures this workflow only triggers on relevant changes
+          # Always build if workflow is triggered (paths filter is the safeguard)
+          echo "should-build=true" >> $GITHUB_OUTPUT
+
+      - name: Generate tags
+        id: tags
+        run: |
+          HASH=$(git rev-parse --short HEAD)
+          echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
+
+          # Use vLLM version as tag
+          VERSION="1.0.0"
+          echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "cache-tag=buildcache" >> $GITHUB_OUTPUT
+
+  test:
+    runs-on: ubuntu-latest
+    needs: prepare-tags
+    if: needs.prepare-tags.outputs.should-build == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build and test image
+        working-directory: llm-bot
+        timeout-minutes: 5
+        run: |
+          echo "Building llm-bot:test..."
+          docker build -t llm-bot:test .
+
+          echo "Running tests..."
+          chmod +x test/test-image.sh
+          ./test/test-image.sh
+
+  build-amd64:
+    runs-on: ubuntu-latest
+    needs: [prepare-tags, test]
+    if: needs.prepare-tags.outputs.should-build == 'true'
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to registries
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
+
+      - name: Build & Push amd64 (single build, multiple tags)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./llm-bot
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.cache-tag }}-amd64
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.cache-tag }}-amd64,mode=max
+
+  manifest:
+    runs-on: ubuntu-latest
+    needs: [prepare-tags, test, build-amd64]
+    if: needs.prepare-tags.outputs.should-build == 'true'
+    timeout-minutes: 5
+    steps:
+      - name: Set up Docker CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
+
+      - name: Create multi-arch manifests (reuse built images, no rebuild)
+        run: |
+          # Hash tag manifest
+          docker manifest create \
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
+
+          # Version tag manifest
+          docker manifest create \
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }} \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}
+
+          # Latest tag manifest
+          docker manifest create \
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
+
+          # Stable tag manifest
+          docker manifest create \
+            ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable \
+            --amend ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
+          docker manifest push ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
+
+          # Repeat for Docker Hub
+          docker manifest create \
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }} \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+          docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}
+
+          docker manifest create \
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }} \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+          docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}
+
+          docker manifest create \
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+          docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest
+
+          docker manifest create \
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable \
+            --amend ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
+          docker manifest push ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [prepare-tags, manifest]
+    if: needs.prepare-tags.outputs.should-build == 'true'
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Create Release (no rebuild, just metadata)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: llm-bot-${{ needs.prepare-tags.outputs.version-tag }}
+          draft: false
+          prerelease: false
+          body: |
+            vLLM LLM Server for Claude CLI
+
+            - Hash: ${{ needs.prepare-tags.outputs.image-hash }}
+            - Built with: amd64 architecture
+            - Tags: hash, version, latest, stable
+
+            ## Quick Start
+            ```bash
+            docker run -d -p 8000:8000 clintonsteiner/llm-bot:latest
+            ```
+
+            See [README](llm-bot/README.md) for detailed setup instructions.

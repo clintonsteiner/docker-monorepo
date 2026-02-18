@@ -24,6 +24,8 @@ jobs:
             context: ./caddy-cloudflaredns
           - project: jenkinsapi
             context: ./jenkinsapi
+          - project: llm-bot
+            context: ./llm-bot
 
     steps:
       - name: Checkout code

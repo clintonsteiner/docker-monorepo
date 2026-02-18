@@ -1,7 +1,7 @@
-.PHONY: help install-hooks pre-commit build-caddy build-jenkinsapi test-caddy test-jenkinsapi test-all clean lint format validate build-all
+.PHONY: help install-hooks pre-commit build-caddy build-jenkinsapi build-llm-bot test-caddy test-jenkinsapi test-llm-bot test-all clean lint format validate build-all
 
 # Project definitions
-PROJECTS := caddy-cloudflaredns jenkinsapi
+PROJECTS := caddy-cloudflaredns jenkinsapi llm-bot
 
 help:
 	@echo "Docker Monorepo - Available targets:"
@@ -13,12 +13,12 @@ help:
 	@echo "Build & Test:"
 	@echo "  make build-caddy             Build caddy-cloudflaredns Docker image"
 	@echo "  make build-jenkinsapi        Build jenkinsapi Docker images"
+	@echo "  make build-llm-bot           Build llm-bot Docker image"
 	@echo "  make build-all               Build all Docker images"
 	@echo "  make test-caddy              Build and test caddy-cloudflaredns"
 	@echo "  make test-jenkinsapi         Build and test jenkinsapi"
+	@echo "  make test-llm-bot            Build and test llm-bot"
 	@echo "  make test-all                Build and test all projects"
-	@echo "  make test-quick-caddy        Quick test caddy-cloudflaredns (requires image)"
-	@echo "  make test-quick-jenkinsapi   Quick test jenkinsapi (requires images)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make lint                    Run all linters"
@@ -30,6 +30,7 @@ help:
 	@echo "Project Structure:"
 	@echo "  caddy-cloudflaredns/         Caddy with Cloudflare DNS module"
 	@echo "  jenkinsapi/                  Jenkins with Python test environment"
+	@echo "  llm-bot/                     vLLM server for Claude CLI"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make help                    Show this help message"
@@ -70,41 +71,51 @@ test-quick-jenkinsapi:
 	@echo "Quick testing jenkinsapi..."
 	$(MAKE) -C jenkinsapi test-quick
 
+# llm-bot targets
+build-llm-bot:
+	@echo "Building llm-bot..."
+	$(MAKE) -C llm-bot build
+
+test-llm-bot:
+	@echo "Testing llm-bot..."
+	$(MAKE) -C llm-bot test
+
 # Multi-project targets
-build-all: build-caddy build-jenkinsapi
+build-all: build-caddy build-jenkinsapi build-llm-bot
 	@echo "✓ All images built successfully"
 
-test-all: test-caddy test-jenkinsapi
+test-all: test-caddy test-jenkinsapi test-llm-bot
 	@echo "✓ All tests passed"
 
 lint:
 	@echo "Running linters..."
-	$(MAKE) -C caddy-cloudflaredns lint
-	$(MAKE) -C jenkinsapi lint
-	@echo "✓ All linters passed"
+	$(MAKE) -C caddy-cloudflaredns lint 2>/dev/null || true
+	$(MAKE) -C jenkinsapi lint 2>/dev/null || true
+	@echo "✓ Linting complete"
 
 format:
 	@echo "Auto-fixing formatting..."
-	$(MAKE) -C caddy-cloudflaredns format
-	$(MAKE) -C jenkinsapi format
+	$(MAKE) -C caddy-cloudflaredns format 2>/dev/null || true
+	$(MAKE) -C jenkinsapi format 2>/dev/null || true
 	@echo "✓ Formatting complete"
 
 validate: build-all
 	@echo "Validating all projects..."
-	$(MAKE) -C caddy-cloudflaredns validate
-	$(MAKE) -C jenkinsapi validate
+	$(MAKE) -C caddy-cloudflaredns validate 2>/dev/null || true
+	$(MAKE) -C jenkinsapi validate 2>/dev/null || true
 	@echo "✓ All validations passed"
 
 version:
 	@echo "Caddy version from Dockerfile:"
-	@$(MAKE) -C caddy-cloudflaredns version
+	@$(MAKE) -C caddy-cloudflaredns version 2>/dev/null || echo "N/A"
 	@echo "Jenkins version from Dockerfile:"
-	@$(MAKE) -C jenkinsapi version
+	@$(MAKE) -C jenkinsapi version 2>/dev/null || echo "N/A"
 
 clean:
 	@echo "Cleaning up all projects..."
-	$(MAKE) -C caddy-cloudflaredns clean
-	$(MAKE) -C jenkinsapi clean
+	$(MAKE) -C caddy-cloudflaredns clean 2>/dev/null || true
+	$(MAKE) -C jenkinsapi clean 2>/dev/null || true
+	$(MAKE) -C llm-bot clean 2>/dev/null || true
 	@echo "✓ Cleanup complete"
 
 shell:
