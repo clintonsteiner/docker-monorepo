@@ -6,8 +6,8 @@ FROM jenkins/jenkins:lts-jdk25
 USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        curl=7.88.1-10+deb12u8 \
-        iputils-ping=3:20221126-1 && \
+        curl \
+        iputils-ping && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
