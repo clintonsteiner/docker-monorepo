@@ -8,120 +8,162 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  weekly-release:
+  increment-versions:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+      caddy_version: ${{ steps.versions.outputs.caddy_version }}
+      jenkins_version: ${{ steps.versions.outputs.jenkins_version }}
+      ollama_version: ${{ steps.versions.outputs.ollama_version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Increment versions and create release
-        id: release
+      - name: Increment and update versions
+        id: versions
+        shell: bash
         run: |
           #!/bin/bash
-          set -e
+          set -euo pipefail
 
-          PROJECTS=("caddy-cloudflaredns" "jenkinsapi" "ollama")
-          UPDATED_PROJECTS=()
+          # Extract and increment version for caddy
+          caddy_current=$(grep "^FROM caddy:" \
+            caddy-cloudflaredns/Dockerfile | head -1 | \
+            sed 's/.*:\([^-]*\).*/\1/')
+          IFS='.' read -r maj min patch <<< "$caddy_current"
+          caddy_new="$maj.$((min + 1)).0"
+          sed -i "s|FROM caddy:.*-builder|FROM caddy:${caddy_new}-builder|" \
+            caddy-cloudflaredns/Dockerfile
+          sed -i "0,/FROM caddy:[0-9.]*/s||FROM caddy:${caddy_new}|" \
+            caddy-cloudflaredns/Dockerfile
+          echo "caddy_version=$caddy_new" >> $GITHUB_OUTPUT
 
-          for project in "${PROJECTS[@]}"; do
-            echo "Processing $project..."
-
-            # Extract version based on project
-            case $project in
-              caddy-cloudflaredns)
-                CURRENT=$(grep "^FROM caddy:" "$project/Dockerfile" | head -1 | sed 's/.*:\([^-]*\).*/\1/')
-                ;;
-              jenkinsapi)
-                CURRENT=$(cat "$project/JENKINS_VERSION" | tr -d '\n')
-                ;;
-              ollama)
-                CURRENT=$(grep "^FROM" "$project/Dockerfile" | head -1 | awk '{print $2}' | sed 's/.*://g')
-                ;;
-            esac
-
-            echo "Current version for $project: $CURRENT"
-
-            # Increment minor version (assumes semantic versioning)
-            MAJOR=$(echo $CURRENT | cut -d. -f1)
-            MINOR=$(echo $CURRENT | cut -d. -f2)
-            PATCH=$(echo $CURRENT | cut -d. -f3)
-
-            # Handle cases where there's no patch version
-            if [ -z "$PATCH" ]; then
-              PATCH=0
-            fi
-
-            MINOR=$((MINOR + 1))
-            PATCH=0
-            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-
-            echo "New version for $project: $NEW_VERSION"
-
-            # Update based on project
-            case $project in
-              caddy-cloudflaredns)
-                OLD_FROM=$(grep "^FROM caddy:" "$project/Dockerfile" | head -1)
-                NEW_FROM="FROM caddy:$NEW_VERSION-builder AS builder"
-                sed -i "s|^FROM caddy:.*-builder|$NEW_FROM|" "$project/Dockerfile"
-
-                # Also update the final stage
-                NEW_FROM_FINAL="FROM caddy:$NEW_VERSION"
-                sed -i "0,/^FROM caddy:[^-]*/s//FROM caddy:$NEW_VERSION/" "$project/Dockerfile"
-                ;;
-              jenkinsapi)
-                echo "$NEW_VERSION" > "$project/JENKINS_VERSION"
-                ;;
-              ollama)
-                # Update FROM line in Dockerfile
-                OLD_FROM=$(grep "^FROM" "$project/Dockerfile" | head -1)
-                NEW_FROM=$(echo "$OLD_FROM" | sed "s|:[^:]*$|:$NEW_VERSION|")
-                sed -i "s|^FROM.*|$NEW_FROM|" "$project/Dockerfile"
-                ;;
-            esac
-
-            UPDATED_PROJECTS+=("$project:$NEW_VERSION")
-          done
-
-          # Create commit and push
-          if [ ${#UPDATED_PROJECTS[@]} -gt 0 ]; then
-            git add caddy-cloudflaredns/Dockerfile jenkinsapi/JENKINS_VERSION ollama/Dockerfile 2>/dev/null || true
-
-            COMMIT_MSG="chore: weekly release - increment minor versions"
-            for item in "${UPDATED_PROJECTS[@]}"; do
-              COMMIT_MSG="$COMMIT_MSG"$'\n'"  - $item"
-            done
-
-            git commit -m "$COMMIT_MSG"
-            git push origin master
-
-            echo "releases=$(printf '%s\n' "${UPDATED_PROJECTS[@]}" | tr '\n' ',')" >> $GITHUB_OUTPUT
-            echo "Released: ${UPDATED_PROJECTS[@]}"
+          # Extract and increment version for jenkins
+          jenkins_current=$(cat jenkinsapi/JENKINS_VERSION | tr -d '\n')
+          if [[ $jenkins_current =~ ^lts-jdk([0-9]+)$ ]]; then
+            jenkins_new="lts-jdk$((${BASH_REMATCH[1]} + 1))"
           else
-            echo "No projects to update"
-            exit 1
+            jenkins_new="$jenkins_current"
+          fi
+          echo "$jenkins_new" > jenkinsapi/JENKINS_VERSION
+          echo "jenkins_version=$jenkins_new" >> $GITHUB_OUTPUT
+
+          # Extract and increment version for ollama
+          ollama_current=$(grep "^FROM" ollama/Dockerfile | head -1 | \
+            awk '{print $2}' | sed 's/.*://g')
+          IFS='.' read -r maj min patch <<< "$ollama_current"
+          ollama_new="$maj.$((min + 1)).0"
+          echo "ollama_version=$ollama_new" >> $GITHUB_OUTPUT
+
+          echo "New versions:"
+          echo "  Caddy: $caddy_new"
+          echo "  Jenkins: $jenkins_new"
+          echo "  Ollama: $ollama_new"
+
+      - name: Detect changes
+        id: detect
+        run: |
+          if git diff --quiet HEAD; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            git diff --stat
           fi
 
-      - name: Create GitHub Release Summary
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
-        if: success()
+      - name: Commit and push changes
+        if: steps.detect.outputs.has_changes == 'true'
+        env:
+          CADDY_VER: ${{ steps.versions.outputs.caddy_version }}
+          JENKINS_VER: ${{ steps.versions.outputs.jenkins_version }}
+          OLLAMA_VER: ${{ steps.versions.outputs.ollama_version }}
+        run: |
+          git add caddy-cloudflaredns/Dockerfile jenkinsapi/JENKINS_VERSION
+          git commit -m "chore: weekly release - increment minor versions
+
+  caddy: $CADDY_VER
+  jenkins: $JENKINS_VER
+  ollama: $OLLAMA_VER"
+          git push origin master
+
+  wait-for-builds:
+    needs: increment-versions
+    if: needs.increment-versions.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Wait for builds
+        uses: actions/github-script@7d8c85880fbf4ef596ebc10c45e05050e5ee23aee
         with:
           script: |
-            const releases = '${{ steps.release.outputs.releases }}'.split(',').filter(Boolean);
-            const summary = releases.map(r => `  • ${r}`).join('\n');
+            const repo = context.repo;
+            const { data: commit } = await github.rest.repos.getCommit({
+              owner: repo.owner,
+              repo: repo.repo,
+              ref: 'master'
+            });
 
-            console.log('Weekly Release Created:');
-            console.log(summary);
+            const sha = commit.sha;
+            console.log(`Waiting for builds for ${sha}`);
 
-            core.notice(`Weekly release created with minor version increments:\n${summary}`);
+            let attempts = 0;
+            const maxAttempts = 60;
+
+            while (attempts < maxAttempts) {
+              const { data: runs } = await github.rest
+                .actions.listWorkflowRunsForRepo({
+                  owner: repo.owner,
+                  repo: repo.repo,
+                  head_sha: sha,
+                  exclude_pull_requests: true
+                });
+
+              const buildRuns = runs.workflow_runs.filter(
+                r => r.id !== context.runId &&
+                  (r.name.includes('Build') ||
+                   r.name.includes('build'))
+              );
+
+              if (buildRuns.length > 0) {
+                const done = buildRuns.filter(
+                  r => r.status === 'completed'
+                );
+                console.log(
+                  `${done.length}/${buildRuns.length} builds complete`
+                );
+
+                if (done.length === buildRuns.length) {
+                  console.log('✓ All builds complete');
+                  break;
+                }
+              }
+
+              await new Promise(r => setTimeout(r, 30000));
+              attempts++;
+            }
+
+      - name: Summary
+        run: |
+          {
+            echo "## Weekly Release"
+            echo ""
+            echo "✓ Versions incremented and pushed"
+            echo ""
+            echo "### New Versions"
+            echo "- Caddy: \
+              ${{ needs.increment-versions.outputs.caddy_version }}"
+            echo "- Jenkins: \
+              ${{ needs.increment-versions.outputs.jenkins_version }}"
+            echo "- Ollama: \
+              ${{ needs.increment-versions.outputs.ollama_version }}"
+          } >> $GITHUB_STEP_SUMMARY
