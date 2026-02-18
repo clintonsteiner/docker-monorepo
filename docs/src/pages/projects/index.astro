@@ -1,80 +1,126 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+
+const projects = [
+  {
+    id: 'caddy-cloudflaredns',
+    name: 'Caddy with Cloudflare DNS',
+    description: 'High-performance web server with Cloudflare DNS module for automatic DNS management',
+  },
+  {
+    id: 'jenkinsapi',
+    name: 'Jenkins API',
+    description: 'Jenkins container with pre-configured plugins and Python test environment',
+  },
+  {
+    id: 'ollama',
+    name: 'Ollama LLM Server',
+    description: 'CPU-optimized LLM inference server with OpenAI-compatible API',
+  },
+];
 ---
 
 <Layout title="Projects" description="Docker monorepo projects overview">
   <h1>Projects</h1>
 
-  <p>The Docker monorepo contains the following projects:</p>
-
-  <h2>Caddy with Cloudflare DNS</h2>
   <p>
-    A high-performance web server with the Cloudflare DNS module integrated. Perfect for scenarios
-    requiring automatic DNS management and high-performance request routing.
+    The Docker monorepo contains multiple containerized projects. Click on any project to view
+    its full documentation, which is automatically updated from the repository.
   </p>
-  <p><a href="/projects/caddy/">View Caddy Documentation</a></p>
 
-  <h2>Jenkins API</h2>
+  <div class="projects-grid">
+    {projects.map((project) => (
+      <div class="project-card">
+        <h3>{project.name}</h3>
+        <p>{project.description}</p>
+        <p class="meta">
+          <code>clintonsteiner/{project.id}</code>
+        </p>
+        <a href={`/projects/${project.id}/`} class="btn">
+          View Full Documentation
+        </a>
+      </div>
+    ))}
+  </div>
+
+  <h2>Multi-Architecture Support</h2>
+
+  <p>All projects are built for multiple architectures:</p>
+
+  <ul>
+    <li>amd64 (x86-64)</li>
+    <li>arm64 (Apple Silicon, ARM64 servers)</li>
+  </ul>
+
   <p>
-    Jenkins container with pre-configured plugins and a Python test environment for testing the
-    jenkinsapi library. Includes automated update checking for Jenkins versions and plugins.
+    Images are pushed to both Docker Hub and GitHub Container Registry (GHCR) with automatic
+    manifest creation for multi-arch support.
   </p>
-  <p><a href="/projects/jenkinsapi/">View Jenkins API Documentation</a></p>
 
-  <h2>Ollama LLM Server</h2>
-  <p>
-    CPU-optimized LLM inference server providing an OpenAI-compatible API. Configurable for
-    different memory and CPU constraints, perfect for local AI applications.
-  </p>
-  <p><a href="/projects/ollama/">View Ollama Documentation</a></p>
+  <h2>CI/CD Pipeline</h2>
 
-  <h2>Build Information</h2>
+  <p>Each project has automated:</p>
 
-  <table>
-    <tr>
-      <th>Project</th>
-      <th>Status Badge</th>
-      <th>Docker Hub</th>
-    </tr>
-    <tr>
-      <td>caddy-cloudflaredns</td>
-      <td><code>clintonsteiner/caddy-cloudflaredns</code></td>
-      <td>Multi-arch (amd64, arm64)</td>
-    </tr>
-    <tr>
-      <td>jenkinsapi</td>
-      <td><code>clintonsteiner/jenkinsapi</code></td>
-      <td>Multi-arch (amd64, arm64)</td>
-    </tr>
-    <tr>
-      <td>ollama</td>
-      <td><code>clintonsteiner/ollama</code></td>
-      <td>Multi-arch (amd64, arm64)</td>
-    </tr>
-  </table>
+  <ul>
+    <li>Testing on every commit</li>
+    <li>Multi-platform builds</li>
+    <li>Automated dependency updates</li>
+    <li>Release creation with build metadata</li>
+  </ul>
 
   <style>
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1.5rem 0;
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin: 2rem 0;
     }
 
-    th, td {
+    .project-card {
       border: 1px solid #e5e7eb;
-      padding: 1rem;
-      text-align: left;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      background: #f9fafb;
+      display: flex;
+      flex-direction: column;
     }
 
-    th {
-      background: #f3f4f6;
-      font-weight: 600;
+    .project-card h3 {
+      margin-top: 0;
+      color: #3b82f6;
+      border: none;
+      padding: 0;
     }
 
-    code {
-      background: #f3f4f6;
-      padding: 0.2rem 0.4rem;
-      border-radius: 0.25rem;
+    .project-card p {
+      flex-grow: 1;
+      margin: 0.5rem 0;
+    }
+
+    .project-card .meta {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-top: auto;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      transition: background 0.2s;
+      margin-top: 1rem;
+    }
+
+    .btn:hover {
+      background: #2563eb;
+    }
+
+    ul {
+      line-height: 1.8;
     }
   </style>
 </Layout>
