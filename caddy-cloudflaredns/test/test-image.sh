@@ -22,12 +22,12 @@ cleanup() {
 
 trap cleanup EXIT
 
-# Test 1: Build image successfully
-echo -e "\n${YELLOW}Test 1: Building image...${NC}"
-if docker build -t "$TEST_IMAGE" . >/dev/null 2>&1; then
-  echo -e "${GREEN}✓ Image built successfully${NC}"
+# Note: Image is pre-built in workflow, just verify it exists
+echo -e "\n${YELLOW}Test 1: Verifying pre-built image...${NC}"
+if docker image inspect "$TEST_IMAGE" >/dev/null 2>&1; then
+  echo -e "${GREEN}✓ Image ready for testing${NC}"
 else
-  echo -e "${RED}✗ Image build failed${NC}"
+  echo -e "${RED}✗ Image not found${NC}"
   exit 1
 fi
 

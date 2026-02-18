@@ -6,7 +6,7 @@ on:
       - master
     paths:
       - 'caddy-cloudflaredns/**'
-      - '.github/workflows/caddy-build-optimized.yml'
+      - '.github/workflows/caddy-cloudflaredns-build-optimized.yml'
   workflow_dispatch:
 
 env:
@@ -14,11 +14,13 @@ env:
   DOCKER_CONTAINER_NAME: caddy-cloudflaredns
   DOCKER_BUILDKIT: 1
   BUILDKIT_PROGRESS: plain
+  BUILDKIT_INLINE_CACHE: 1
   REGISTRY: ghcr.io
 
 jobs:
   prepare-tags:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     outputs:
       image-hash: ${{ steps.tags.outputs.image-hash }}
       version-tag: ${{ steps.tags.outputs.version-tag }}
@@ -221,6 +223,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare-tags, manifest]
     if: needs.prepare-tags.outputs.should-build == 'true'
+    timeout-minutes: 3
     steps:
       - name: Checkout
         uses: actions/checkout@v4

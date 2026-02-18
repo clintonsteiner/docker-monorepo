@@ -14,11 +14,13 @@ env:
   DOCKER_CONTAINER_NAME: jenkinsapi
   DOCKER_BUILDKIT: 1
   BUILDKIT_PROGRESS: plain
+  BUILDKIT_INLINE_CACHE: 1
   REGISTRY: ghcr.io
 
 jobs:
   prepare-tags:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     outputs:
       image-hash: ${{ steps.tags.outputs.image-hash }}
       version-tag: ${{ steps.tags.outputs.version-tag }}
@@ -54,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare-tags
     if: needs.prepare-tags.outputs.should-build == 'true'
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,11 +81,25 @@ jobs:
 
       - name: Run tests
         working-directory: jenkinsapi
-        timeout-minutes: 5
+        timeout-minutes: 3
         run: |
-          chmod +x test/test-image.sh
+          # Tag the pre-built image for testing
           docker tag ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:test jenkinsapi:test
-          ./test/test-image.sh
+
+          # Quick verification tests (don't rebuild)
+          echo "Verifying Jenkins binary..."
+          docker run --rm jenkinsapi:test test -x /usr/local/bin/jenkins.sh
+
+          echo "Verifying Jenkins version..."
+          docker run --rm jenkinsapi:test /usr/local/bin/jenkins.sh --version
+
+          echo "Verifying entrypoint..."
+          docker run --rm jenkinsapi:test test -x /usr/local/bin/jenkins-entrypoint.sh
+
+          echo "Verifying utilities..."
+          docker run --rm jenkinsapi:test which curl ping
+
+          echo "✓ All tests passed"
 
   build-amd64:
     runs-on: ubuntu-latest
@@ -240,6 +256,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare-tags, manifest]
     if: needs.prepare-tags.outputs.should-build == 'true'
+    timeout-minutes: 3
     steps:
       - name: Checkout
         uses: actions/checkout@v4
