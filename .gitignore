@@ -1,0 +1,20 @@
+.secrets
+.DS_Store
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# Pre-commit
+.pre-commit-framework/
+
+# Test artifacts
+test/logs/
+test/*.log
+
+# Docker
+.dockerignore
