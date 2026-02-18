@@ -9,6 +9,11 @@ on:
   check_suite:
     types: [completed]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to automerge (for manual runs)'
+        required: false
+        type: number
 
 permissions:
   contents: write
@@ -17,7 +22,9 @@ permissions:
 jobs:
   automerge:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: |
+      github.actor == 'dependabot[bot]' ||
+      github.event_name == 'workflow_dispatch'
     timeout-minutes: 5
     steps:
       - name: Checkout code
@@ -27,20 +34,42 @@ jobs:
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
-            const pullRequest = context.payload.pull_request;
-            if (!pullRequest) {
-              console.log('No pull request found, skipping auto-merge setup');
-              return;
+            let prNumber;
+
+            // For workflow_dispatch manual runs
+            if (context.eventName === 'workflow_dispatch') {
+              const input = '${{ github.event.inputs.pr_number }}';
+              if (input && input !== '') {
+                prNumber = parseInt(input);
+                console.log(`Manual run for PR #${prNumber}`);
+              } else {
+                console.log('No PR number provided, skipping');
+                return;
+              }
+            } else {
+              // For automatic triggers
+              const pullRequest = context.payload.pull_request;
+              if (!pullRequest) {
+                console.log('No pull request found, skipping auto-merge setup');
+                return;
+              }
+              prNumber = pullRequest.number;
             }
 
-            const prNumber = pullRequest.number;
             console.log(`Processing PR #${prNumber}`);
+
+            // Get PR details to get the commit SHA
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
 
             // Check if all required checks have passed
             const { data: checkRuns } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: pullRequest.head.sha,
+              ref: pr.head.sha,
             });
 
             const requiredChecks = ['test-all', 'build-all'];

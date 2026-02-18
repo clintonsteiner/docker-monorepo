@@ -80,17 +80,17 @@ jobs:
 
       - name: Commit and push changes
         if: steps.detect.outputs.has_changes == 'true'
-        env:
-          CADDY_VER: ${{ steps.versions.outputs.caddy_version }}
-          JENKINS_VER: ${{ steps.versions.outputs.jenkins_version }}
-          OLLAMA_VER: ${{ steps.versions.outputs.ollama_version }}
+        shell: bash
         run: |
           git add caddy-cloudflaredns/Dockerfile jenkinsapi/JENKINS_VERSION
-          git commit -m "chore: weekly release - increment minor versions
+          cat > /tmp/commit_msg.txt << 'EOF'
+          chore: weekly release - increment minor versions
 
-  caddy: $CADDY_VER
-  jenkins: $JENKINS_VER
-  ollama: $OLLAMA_VER"
+          caddy: ${{ steps.versions.outputs.caddy_version }}
+          jenkins: ${{ steps.versions.outputs.jenkins_version }}
+          ollama: ${{ steps.versions.outputs.ollama_version }}
+          EOF
+          git commit -F /tmp/commit_msg.txt
           git push origin master
 
   wait-for-builds:

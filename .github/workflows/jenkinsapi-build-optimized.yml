@@ -110,7 +110,11 @@ jobs:
           context: ./jenkinsapi
           platforms: linux/amd64
           push: true
-          outputs: type=image,push-by-digest=true,name-canonical=true
+          outputs: >-
+            type=image,
+            push-by-digest=true,
+            name-canonical=true,
+            name=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}
           cache-from: |
             type=gha
             type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64
@@ -164,7 +168,11 @@ jobs:
           context: ./jenkinsapi
           platforms: linux/arm64
           push: true
-          outputs: type=image,push-by-digest=true,name-canonical=true
+          outputs: >-
+            type=image,
+            push-by-digest=true,
+            name-canonical=true,
+            name=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}
           cache-from: |
             type=gha
             type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64
