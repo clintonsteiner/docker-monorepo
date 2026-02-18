@@ -103,7 +103,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Wait for builds
-        uses: actions/github-script@7d8c85880fbf4ef596ebc10c45e05050e5ee23aee
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const repo = context.repo;

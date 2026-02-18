@@ -1,0 +1,138 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '*-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  parse-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      project: ${{ steps.detect.outputs.project }}
+      version: ${{ steps.detect.outputs.version }}
+      is_valid: ${{ steps.detect.outputs.is_valid }}
+    steps:
+      - name: Detect project from tag
+        id: detect
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "Tag: $TAG"
+
+          # Parse tag format: project-vX.Y.Z or vX.Y.Z
+          if [[ $TAG =~ ^([a-z-]+)-v([0-9.]+)$ ]]; then
+            PROJECT="${BASH_REMATCH[1]}"
+            VERSION="${BASH_REMATCH[2]}"
+            echo "Project: $PROJECT, Version: $VERSION"
+          elif [[ $TAG =~ ^v([0-9.]+)$ ]]; then
+            PROJECT="all"
+            VERSION="${BASH_REMATCH[1]}"
+            echo "Multi-project release: $VERSION"
+          else
+            echo "Invalid tag format: $TAG"
+            echo "is_valid=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "project=$PROJECT" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_valid=true" >> $GITHUB_OUTPUT
+
+  test:
+    needs: parse-tag
+    if: needs.parse-tag.outputs.is_valid == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Run tests for ${{ needs.parse-tag.outputs.project }}
+        run: |
+          PROJECT="${{ needs.parse-tag.outputs.project }}"
+          VERSION="${{ needs.parse-tag.outputs.version }}"
+
+          echo "Testing release: $PROJECT v$VERSION"
+
+          if [ "$PROJECT" = "all" ]; then
+            echo "Running all tests..."
+            make test-all || exit 1
+          else
+            echo "Running tests for $PROJECT..."
+            make test-$PROJECT || exit 1
+          fi
+
+          echo "✓ All tests passed for $PROJECT v$VERSION"
+
+  create-release:
+    needs: [parse-tag, test]
+    if: needs.parse-tag.outputs.is_valid == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Create GitHub Release
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const tag = context.ref_name;
+            const project = '${{ needs.parse-tag.outputs.project }}';
+            const version = '${{ needs.parse-tag.outputs.version }}';
+
+            let releaseBody = `## Release ${version}\n\n`;
+
+            if (project === 'all') {
+              releaseBody += `Multi-project release\n\n`;
+            } else {
+              releaseBody += `Project: **${project}**\n\n`;
+            }
+
+            releaseBody += `### Build Info\n`;
+            releaseBody += `- Tag: \`${tag}\`\n`;
+            releaseBody += `- Commit: [\`${context.sha.substring(0, 7)}\`](${context.payload.repository.html_url}/commit/${context.sha})\n`;
+            releaseBody += `- Workflow: [Run #${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})\n\n`;
+
+            releaseBody += `### Tests\n`;
+            releaseBody += `✓ All tests passed\n\n`;
+
+            releaseBody += `### Images\n`;
+            if (project === 'all') {
+              releaseBody += `- \`clintonsteiner/${project}:${version}\`\n`;
+              releaseBody += `- \`ghcr.io/${context.repo.owner}/${project}:${version}\`\n`;
+            } else {
+              releaseBody += `- \`clintonsteiner/${project}:${version}\`\n`;
+              releaseBody += `- \`ghcr.io/${context.repo.owner}/${project}:${version}\`\n`;
+            }
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `${project === 'all' ? 'v' : project + '-v'}${version}`,
+              body: releaseBody,
+              draft: false,
+              prerelease: version.includes('alpha') ||
+                          version.includes('beta') ||
+                          version.includes('rc'),
+            });
+
+            console.log(`✓ Release created: ${tag}`);
+
+      - name: Summary
+        run: |
+          {
+            echo "## Release Created"
+            echo ""
+            echo "✓ Tests passed"
+            echo "✓ Release published"
+            echo ""
+            echo "### Details"
+            echo "- **Project**: ${{ needs.parse-tag.outputs.project }}"
+            echo "- **Version**: ${{ needs.parse-tag.outputs.version }}"
+            echo "- **Tag**: ${{ github.ref_name }}"
+          } >> $GITHUB_STEP_SUMMARY
