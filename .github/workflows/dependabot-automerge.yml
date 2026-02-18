@@ -1,0 +1,92 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request:
+    branches:
+      - master
+  pull_request_review:
+    types: [submitted]
+  check_suite:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@692973e3563c81f5fb0f4e5a50ffdf75bbc9fbfa
+
+      - name: Enable auto-merge for Dependabot PRs
+        uses: actions/github-script@7d8c85880fbf4ef596ebc10c45e05050e5ee23aee
+        with:
+          script: |
+            const pullRequest = context.payload.pull_request;
+            if (!pullRequest) {
+              console.log('No pull request found, skipping auto-merge setup');
+              return;
+            }
+
+            const prNumber = pullRequest.number;
+            console.log(`Processing PR #${prNumber}`);
+
+            // Check if all required checks have passed
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pullRequest.head.sha,
+            });
+
+            const requiredChecks = ['test-all', 'build-all'];
+            const passedChecks = new Set();
+            const failedChecks = new Set();
+
+            for (const checkRun of checkRuns.check_runs) {
+              if (checkRun.status === 'completed') {
+                if (checkRun.conclusion === 'success') {
+                  passedChecks.add(checkRun.name);
+                } else if (checkRun.conclusion !== 'skipped') {
+                  failedChecks.add(checkRun.name);
+                }
+              }
+            }
+
+            console.log(`Passed checks: ${Array.from(passedChecks).join(', ')}`);
+            console.log(`Failed checks: ${Array.from(failedChecks).join(', ')}`);
+
+            if (failedChecks.size > 0) {
+              console.log('Some checks failed, skipping auto-merge');
+              return;
+            }
+
+            // Approve the PR
+            try {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                event: 'APPROVE',
+                body: 'Automatically approved by auto-merge workflow - all checks passed',
+              });
+              console.log(`Approved PR #${prNumber}`);
+            } catch (error) {
+              console.log(`PR might already be approved: ${error.message}`);
+            }
+
+            // Enable auto-merge
+            try {
+              await github.rest.pulls.enableAutoMerge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+              });
+              console.log(`Enabled auto-merge (squash) for PR #${prNumber}`);
+            } catch (error) {
+              console.log(`Auto-merge might already be enabled: ${error.message}`);
+            }

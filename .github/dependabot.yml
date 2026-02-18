@@ -1,4 +1,9 @@
 version: 2
+
+# Configure auto-merge for Dependabot PRs
+# Note: Auto-merge will be triggered by the dependabot-automerge workflow
+# after all tests pass
+
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
