@@ -103,39 +103,26 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
 
-      - name: Build & Push amd64 (by digest, no manifest lists)
+      - name: Build & Push amd64
         id: build-amd64
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ./jenkinsapi
           platforms: linux/amd64
           push: true
-          outputs: >-
-            type=image,
-            push-by-digest=true,
-            name-canonical=true,
-            name=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-amd64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
           cache-from: |
             type=gha
             type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64,mode=max
-
-      - name: Tag amd64 by digest
-        env:
-          DIGEST: ${{ steps.build-amd64.outputs.digest }}
-          HASH_TAG: ${{ needs.prepare-tags.outputs.image-hash }}
-          VERSION_TAG: ${{ needs.prepare-tags.outputs.version-tag }}
-        run: |
-          set -x
-          for tag in "${HASH_TAG}" "${VERSION_TAG}" "latest" "stable"; do
-            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
-              "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
-            docker push "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
-
-            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
-              "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
-            docker push "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-amd64"
-          done
 
   build-arm64:
     runs-on: ubuntu-latest
@@ -161,39 +148,26 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ env.DOCKER_USERNAME }} --password-stdin
 
-      - name: Build & Push arm64 (by digest, no manifest lists)
+      - name: Build & Push arm64
         id: build-arm64
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ./jenkinsapi
           platforms: linux/arm64
           push: true
-          outputs: >-
-            type=image,
-            push-by-digest=true,
-            name-canonical=true,
-            name=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.image-hash }}-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${{ needs.prepare-tags.outputs.version-tag }}-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:latest-arm64
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
           cache-from: |
             type=gha
             type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64,mode=max
-
-      - name: Tag arm64 by digest
-        env:
-          DIGEST: ${{ steps.build-arm64.outputs.digest }}
-          HASH_TAG: ${{ needs.prepare-tags.outputs.image-hash }}
-          VERSION_TAG: ${{ needs.prepare-tags.outputs.version-tag }}
-        run: |
-          set -x
-          for tag in "${HASH_TAG}" "${VERSION_TAG}" "latest" "stable"; do
-            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
-              "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
-            docker push "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
-
-            docker tag "${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}@${DIGEST}" \
-              "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
-            docker push "${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:${tag}-arm64"
-          done
 
   manifest:
     runs-on: ubuntu-latest
