@@ -29,19 +29,13 @@ jobs:
       - name: Extract current versions
         id: versions
         run: |
-          # Extract caddy version
-          caddy_version=$(grep "^FROM caddy:" \
-            caddy-cloudflaredns/Dockerfile | head -1 | \
-            sed 's/.*:\([^-]*\).*/\1/')
+          caddy_version=$(cat caddy-cloudflaredns/VERSION | tr -d '[:space:]')
           echo "caddy_version=$caddy_version" >> $GITHUB_OUTPUT
 
-          # Extract jenkins version
-          jenkins_version=$(cat jenkinsapi/JENKINS_VERSION | tr -d '\n')
+          jenkins_version=$(cat jenkinsapi/JENKINS_VERSION | tr -d '[:space:]')
           echo "jenkins_version=$jenkins_version" >> $GITHUB_OUTPUT
 
-          # Extract ollama version
-          ollama_version=$(grep "^FROM" ollama/Dockerfile | head -1 | \
-            awk '{print $2}' | cut -d: -f2)
+          ollama_version=$(cat ollama/VERSION | tr -d '[:space:]')
           echo "ollama_version=$ollama_version" >> $GITHUB_OUTPUT
 
           echo "Current versions:"

@@ -20,12 +20,15 @@ jobs:
           - name: caddy-cloudflaredns
             image: caddy
             dockerfile: caddy-cloudflaredns/Dockerfile
+            version_file: caddy-cloudflaredns/VERSION
           - name: jenkinsapi
             image: jenkins
             dockerfile: jenkinsapi/Dockerfile
+            version_file: jenkinsapi/JENKINS_VERSION
           - name: ollama
             image: ollama/ollama
             dockerfile: ollama/Dockerfile
+            version_file: ollama/VERSION
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -58,9 +61,8 @@ jobs:
       - name: Get current version for ${{ matrix.project.name }}
         id: current
         run: |
-          FILE="${{ matrix.project.dockerfile }}"
-          CURRENT=$(grep "^FROM" "$FILE" | head -1 | \
-            awk '{print $2}' | sed 's/.*://g')
+          VERSION_FILE="${{ matrix.project.version_file }}"
+          CURRENT=$(cat "$VERSION_FILE" | tr -d '[:space:]')
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
           echo "Current version: $CURRENT"
 
@@ -77,21 +79,24 @@ jobs:
             echo "needs_update=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Update ${{ matrix.project.name }} Dockerfile
+      - name: Update ${{ matrix.project.name }} Dockerfile and version file
         if: steps.compare.outputs.needs_update == 'true'
         run: |
           FILE="${{ matrix.project.dockerfile }}"
-          IMAGE="${{ matrix.project.image }}"
+          VERSION_FILE="${{ matrix.project.version_file }}"
+          CURRENT="${{ steps.current.outputs.current }}"
           LATEST="${{ steps.latest.outputs.latest }}"
-
-          # Get the base image name
           BASE_IMAGE=$(grep "^FROM" "$FILE" | head -1 | awk '{print $2}' | cut -d: -f1)
 
-          # Update all FROM lines with this image
-          sed -i "s|FROM ${BASE_IMAGE}:.*|FROM ${BASE_IMAGE}:${LATEST}|g" "$FILE"
+          # Replace versioned FROM lines, preserving any tag suffixes (e.g. -builder)
+          sed -i "s|FROM ${BASE_IMAGE}:${CURRENT}-|FROM ${BASE_IMAGE}:${LATEST}-|g" "$FILE"
+          sed -i "s|FROM ${BASE_IMAGE}:${CURRENT}|FROM ${BASE_IMAGE}:${LATEST}|g" "$FILE"
 
-          echo "✓ Updated $FILE to $LATEST"
-          cat "$FILE" | grep "^FROM"
+          # Keep version file in sync
+          echo "$LATEST" > "$VERSION_FILE"
+
+          echo "✓ Updated $FILE and $VERSION_FILE to $LATEST"
+          grep "^FROM" "$FILE"
 
       - name: Configure Git
         if: steps.compare.outputs.needs_update == 'true'
