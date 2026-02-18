@@ -28,13 +28,24 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Run tests for ${{ matrix.project }}
+      - name: Build and test ${{ matrix.project }}
         working-directory: ${{ matrix.project }}
+        timeout-minutes: 10
         run: |
+          # Build the image for testing
+          if [ "${{ matrix.project }}" == "caddy-cloudflaredns" ]; then
+            echo "Building caddy-cloudflaredns:test..."
+            docker build -t caddy-cloudflaredns:test .
+          elif [ "${{ matrix.project }}" == "jenkinsapi" ]; then
+            echo "Building jenkinsapi:test..."
+            docker build -t jenkinsapi:test .
+          fi
+
+          # Run tests
+          echo "Running tests for ${{ matrix.project }}..."
           chmod +x test/test-image.sh
           ./test/test-image.sh
 
