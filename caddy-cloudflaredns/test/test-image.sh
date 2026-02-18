@@ -7,8 +7,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Extract expected Caddy version from Dockerfile
-EXPECTED_VERSION=$(grep "^FROM caddy:" Dockerfile | head -1 | sed 's/.*:\([^-]*\).*/\1/')
+EXPECTED_VERSION=$(cat VERSION)
 TEST_IMAGE="caddy-cloudflaredns:test"
 CONTAINER_NAME="caddy-cloudflaredns-test"
 
