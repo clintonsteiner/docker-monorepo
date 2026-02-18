@@ -35,11 +35,9 @@ jobs:
       - name: Detect changes
         id: detect
         run: |
-          if git diff HEAD~1 HEAD --name-only 2>/dev/null | grep -qE '^caddy-cloudflaredns/|\.github/workflows/caddy'; then
-            echo "should-build=true" >> $GITHUB_OUTPUT
-          else
-            echo "should-build=false" >> $GITHUB_OUTPUT
-          fi
+          # Paths filter already ensures this workflow only triggers on relevant changes
+          # Always build if workflow is triggered (paths filter is the safeguard)
+          echo "should-build=true" >> $GITHUB_OUTPUT
 
       - name: Generate tags
         id: tags
