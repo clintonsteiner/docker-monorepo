@@ -103,10 +103,6 @@ jobs:
             push-by-digest=true,
             name-canonical=true,
             name=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}
-          cache-from: |
-            type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64,mode=max
 
       - name: Tag amd64 by digest
         env:
@@ -160,10 +156,6 @@ jobs:
             push-by-digest=true,
             name-canonical=true,
             name=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}
-          cache-from: |
-            type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64,mode=max
 
       - name: Tag arm64 by digest
         env:
