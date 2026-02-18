@@ -2,30 +2,24 @@
 # Use a recent LTS Jenkins version with JDK 21
 FROM jenkins/jenkins:lts-jdk25
 
-# Install additional system utilities needed for tests and healthchecks
+# Install system utilities and setup Jenkins
 USER root
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
-        iputils-ping
+        iputils-ping && \
+    mkdir -p /var/jenkins_home && \
+    chmod 777 /var/jenkins_home
 
-# Ensure JENKINS_HOME directory exists with proper permissions for mounted volumes
-RUN mkdir -p /var/jenkins_home && chmod 777 /var/jenkins_home
-
-# Copy plugins.txt early for better layer caching
+# Copy plugins.txt and entrypoint script early for better layer caching
 COPY plugins.txt /tmp/plugins.txt
-
-# Install plugins using jenkins-plugin-cli with build cache
-# This handles plugin dependencies automatically
-# Use --latest=false to respect version pins in plugins.txt
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    jenkins-plugin-cli --plugin-file /tmp/plugins.txt --verbose --latest=false
-
-# Copy and setup custom entrypoint wrapper script (late in build to avoid rebuilds)
 COPY jenkins-entrypoint.sh /usr/local/bin/jenkins-entrypoint.sh
-RUN chmod +x /usr/local/bin/jenkins-entrypoint.sh
+
+# Install plugins and setup entrypoint in single layer
+RUN jenkins-plugin-cli --plugin-file /tmp/plugins.txt --verbose --latest=false && \
+    chmod +x /usr/local/bin/jenkins-entrypoint.sh
 
 USER jenkins
 
@@ -57,5 +51,3 @@ EXPOSE 50000
 ENTRYPOINT ["/bin/tini", "--"]
 
 CMD ["/usr/local/bin/jenkins-entrypoint.sh"]
-
-USER jenkins

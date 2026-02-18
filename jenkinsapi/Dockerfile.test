@@ -9,38 +9,28 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Set working directory
 WORKDIR /workspace
 
-# Install system dependencies with apt cache (layer cached for faster builds)
+# Install system dependencies and uv package manager (with cache)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,target=/root/.cache \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         libkrb5-dev \
         gcc \
         git \
-        curl
-
-# Install uv - faster Python package manager (cached)
-RUN --mount=type=cache,target=/root/.cache \
+        curl && \
     curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uv /usr/local/bin/uv
 
-# Create a virtual environment
+# Create virtual environment and set PATH
 RUN uv venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Copy pyproject.toml early for better layer caching
+# Copy pyproject.toml and install Python dependencies (cached)
 COPY pyproject.toml .
-
-# Install Python dependencies with pip cache
-# This caches the dependency layer so tests run immediately
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install -e ".[dev]" && \
-    uv pip install \
-        pytest-xdist \
-        pytest-cov \
-        pytest-mock \
-        pytest-timeout \
-        pyyaml
+    uv pip install pytest-xdist pytest-cov pytest-mock pytest-timeout pyyaml
 
 # Set Python path
 ENV PYTHONPATH=/workspace:$PYTHONPATH
