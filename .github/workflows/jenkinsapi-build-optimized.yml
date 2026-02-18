@@ -45,8 +45,8 @@ jobs:
           HASH=$(git rev-parse --short HEAD)
           echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
 
-          # Extract Jenkins version from Dockerfile
-          VERSION=$(grep "^FROM jenkins/jenkins:" jenkinsapi/Dockerfile | head -1 | sed 's/.*:\([^-]*\).*/\1/')
+          # Read Jenkins version from JENKINS_VERSION file
+          VERSION=$(cat jenkinsapi/JENKINS_VERSION)
           echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
           echo "cache-tag=buildcache" >> $GITHUB_OUTPUT
 
@@ -121,8 +121,8 @@ jobs:
             ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-amd64
           cache-from: |
             type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-amd64,mode=max
 
   build-arm64:
     runs-on: ubuntu-latest
@@ -166,8 +166,8 @@ jobs:
             ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_CONTAINER_NAME }}:stable-arm64
           cache-from: |
             type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.actor }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.DOCKER_CONTAINER_NAME }}:buildcache-arm64,mode=max
 
   manifest:
     runs-on: ubuntu-latest
