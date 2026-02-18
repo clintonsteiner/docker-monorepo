@@ -45,7 +45,7 @@ jobs:
           HASH=$(git rev-parse --short HEAD)
           echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
 
-          VERSION=$(grep "^FROM caddy:" caddy-cloudflaredns/Dockerfile | sed 's/.*:\([^-]*\).*/\1/')
+          VERSION=$(grep "^FROM caddy:" caddy-cloudflaredns/Dockerfile | head -1 | sed 's/.*:\([^-]*\).*/\1/')
           echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
           echo "cache-tag=buildcache" >> $GITHUB_OUTPUT
 

@@ -46,7 +46,7 @@ jobs:
           echo "image-hash=${HASH}" >> $GITHUB_OUTPUT
 
           # Extract Jenkins version from Dockerfile
-          VERSION=$(grep "^FROM jenkins/jenkins:" jenkinsapi/Dockerfile | sed 's/.*:\([^-]*\).*/\1/')
+          VERSION=$(grep "^FROM jenkins/jenkins:" jenkinsapi/Dockerfile | head -1 | sed 's/.*:\([^-]*\).*/\1/')
           echo "version-tag=${VERSION}" >> $GITHUB_OUTPUT
           echo "cache-tag=buildcache" >> $GITHUB_OUTPUT
 
