@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@692973e3563c81f5fb0f4e5a50ffdf75bbc9fbfa
         with:
           fetch-depth: 1
 
