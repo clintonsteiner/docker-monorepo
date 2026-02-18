@@ -1,6 +1,6 @@
 # vLLM server for running 70B LLMs on CPU with high RAM
 # Supports OpenAI-compatible API for use with Claude CLI and other tools
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Set environment variables for vLLM optimization
 ENV PYTHONUNBUFFERED=1 \
