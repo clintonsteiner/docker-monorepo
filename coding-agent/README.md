@@ -27,9 +27,24 @@ A locally hosted coding agent powered by **Qwen2.5-Coder-32B** running on **Open
 
 ## Quick Start
 
+### Using Pre-built Image (Recommended)
+
 1. **Start the service**:
    ```bash
    cd coding-agent
+   make start
+   ```
+
+### Building Custom Image Locally
+
+1. **Build the image**:
+   ```bash
+   cd coding-agent
+   make build
+   ```
+
+2. **Start the service**:
+   ```bash
    make start
    ```
 
@@ -61,31 +76,75 @@ A locally hosted coding agent powered by **Qwen2.5-Coder-32B** running on **Open
 
 You can use the actual Claude Code CLI with your self-hosted model!
 
-1. **Configure Claude Code**:
-   ```bash
-   # Edit ~/.claude/config.json
-   {
-     "apiKey": "sk-local",
-     "baseURL": "http://unraid.clintonsteiner.com:3000/v1",
-     "model": "qwen2.5-coder:32b-instruct-q5_K_M",
-     "modelFamily": "openai-compatible"
-   }
-   ```
+### Quick Setup - Automatic Switcher
 
-2. **Run Claude Code normally**:
-   ```bash
-   claude
-   ```
+Run the setup script to install easy switching between local and cloud:
 
-Now Claude Code will use your local model instead of Anthropic's API!
-
-**Switch between local and Anthropic**:
 ```bash
-# Use local model
-export ANTHROPIC_BASE_URL="http://unraid.clintonsteiner.com:3000/v1"
+cd coding-agent
+./scripts/setup-claude-switcher.sh
+source ~/.bashrc  # or ~/.zshrc
+```
 
-# Use Anthropic API
-unset ANTHROPIC_BASE_URL
+This installs convenient commands:
+
+```bash
+# Switch to local model
+claude-local   # or just: cl
+
+# Switch to cloud API
+claude-cloud   # or just: cc
+
+# Check current mode
+claude-status  # or just: cs
+```
+
+**How it works:**
+- `claude-local`: Switches to your local Qwen2.5-Coder model
+  - Stores your existing Anthropic API key
+  - Sets environment to use local server
+- `claude-cloud`: Switches back to Anthropic's cloud API
+  - Restores your original API key automatically
+  - Uses cloud infrastructure
+- `claude-status`: Shows which mode you're currently using
+
+### Manual Configuration (Alternative)
+
+If you prefer manual configuration:
+
+1. **For local mode**:
+   ```bash
+   export ANTHROPIC_BASE_URL="http://unraid.clintonsteiner.com:3000/v1"
+   export ANTHROPIC_API_KEY="sk-local"
+   export ANTHROPIC_MODEL="qwen2.5-coder:32b-instruct-q5_K_M"
+   ```
+
+2. **For cloud mode**:
+   ```bash
+   unset ANTHROPIC_BASE_URL
+   unset ANTHROPIC_MODEL
+   # Set your real API key
+   export ANTHROPIC_API_KEY="sk-ant-..."
+   ```
+
+### Usage Example
+
+```bash
+$ claude-local
+🔄 Switching to local model...
+💾 Stored existing API key
+✅ Now using local Qwen2.5-Coder model
+
+$ claude
+# Now uses your local model
+
+$ claude-cloud
+🔄 Switching to Anthropic cloud API...
+🔑 Restored original API key
+✅ Now using Anthropic cloud API
+
+$ claude
+# Now uses Anthropic's cloud API
 ```
 
 ## Performance
@@ -106,6 +165,19 @@ Qwen2.5-Coder-32B (Q5_K_M quantization, 20GB)
 ```
 
 **Single container** - No complex setup!
+
+### Docker Images
+
+**Custom Build:**
+- Docker Hub: `docker.io/clintonsteiner/coding-agent`
+- GitHub Container Registry: `ghcr.io/clintonsteiner/coding-agent`
+
+**Features of custom image:**
+- Pre-configured optimal settings for coding
+- Custom system prompts optimized for Qwen2.5-Coder
+- Performance tuning for i9-12900k
+- Automatic health checks
+- Multi-architecture support (amd64, arm64)
 
 ## Configuration
 

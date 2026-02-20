@@ -1,12 +1,16 @@
-.PHONY: help start stop restart logs status download-model pull-model test clean
+.PHONY: help build push start stop restart logs status download-model pull-model test clean
 
 VERSION ?= $(shell cat VERSION)
 CONTAINER_NAME ?= coding-agent
+IMAGE_NAME ?= clintonsteiner/coding-agent
+GHCR_IMAGE_NAME ?= ghcr.io/clintonsteiner/coding-agent
 
 help:
 	@echo "Coding Agent - Self-hosted Claude Code alternative"
 	@echo ""
 	@echo "Available targets:"
+	@echo "  build          - Build the Docker image"
+	@echo "  push           - Push image to registries (Docker Hub + GHCR)"
 	@echo "  start          - Start the coding agent"
 	@echo "  stop           - Stop the coding agent"
 	@echo "  restart        - Restart the coding agent"
@@ -17,7 +21,35 @@ help:
 	@echo "  test           - Run health checks"
 	@echo "  clean          - Remove containers and volumes"
 	@echo ""
+	@echo "Docker Image:"
+	@echo "  Version: $(VERSION)"
+	@echo "  Docker Hub: $(IMAGE_NAME):$(VERSION)"
+	@echo "  GHCR: $(GHCR_IMAGE_NAME):$(VERSION)"
+	@echo ""
 	@echo "Access the UI at: http://unraid.clintonsteiner.com:3000"
+
+build:
+	@echo "Building coding-agent Docker image..."
+	@echo "Version: $(VERSION)"
+	docker build -t $(IMAGE_NAME):$(VERSION) \
+		-t $(IMAGE_NAME):latest \
+		-t $(GHCR_IMAGE_NAME):$(VERSION) \
+		-t $(GHCR_IMAGE_NAME):latest \
+		.
+	@echo "✓ Image built successfully"
+
+push: build
+	@echo "Pushing to Docker Hub..."
+	docker push $(IMAGE_NAME):$(VERSION)
+	docker push $(IMAGE_NAME):latest
+	@echo ""
+	@echo "Pushing to GitHub Container Registry..."
+	docker push $(GHCR_IMAGE_NAME):$(VERSION)
+	docker push $(GHCR_IMAGE_NAME):latest
+	@echo ""
+	@echo "✓ Images pushed successfully!"
+	@echo "  Docker Hub: $(IMAGE_NAME):$(VERSION)"
+	@echo "  GHCR: $(GHCR_IMAGE_NAME):$(VERSION)"
 
 start:
 	@echo "Starting coding agent..."

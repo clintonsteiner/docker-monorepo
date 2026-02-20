@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/clintonsteiner/coding-agent:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: coding-agent
     ports:
       - "3000:8080"  # Web UI port

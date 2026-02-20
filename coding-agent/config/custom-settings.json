@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "name": "Coding Agent - Custom Configuration",
+  "description": "Pre-configured settings for optimal coding assistance",
+  "settings": {
+    "models": {
+      "default": "qwen2.5-coder:32b-instruct-q5_K_M",
+      "params": {
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "max_tokens": 4096,
+        "stream": true
+      }
+    },
+    "code_execution": {
+      "enabled": true,
+      "sandbox": true,
+      "timeout": 30
+    },
+    "system_prompts": {
+      "coding": "You are an expert coding assistant powered by Qwen2.5-Coder-32B. You excel at:\n- Writing clean, efficient, and well-documented code\n- Debugging and troubleshooting issues\n- Explaining complex programming concepts\n- Following best practices and design patterns\n- Providing helpful code examples\n\nAlways aim to write production-ready code with proper error handling.",
+      "default": "You are a helpful AI assistant specialized in software development and programming."
+    },
+    "ui": {
+      "theme": "dark",
+      "code_theme": "monokai",
+      "font_size": 14,
+      "show_line_numbers": true
+    }
+  }
+}
