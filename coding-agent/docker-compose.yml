@@ -35,10 +35,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '14'      # Leave 2 cores for system
+          cpus: '5'      # Leave 2 cores for system
           memory: 80G     # Leave 16GB for system
         reservations:
-          cpus: '8'
+          cpus: '3'
           memory: 40G
 
     restart: unless-stopped

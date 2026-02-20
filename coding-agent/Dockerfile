@@ -6,12 +6,14 @@ LABEL org.opencontainers.image.authors="Clinton Steiner <clintonsteiner@gmail.co
 LABEL org.opencontainers.image.source="https://github.com/clintonsteiner/docker-monorepo"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# Install curl for model download (if not already present)
+# Install Ollama for model management
 USER root
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://ollama.com/install.sh | sh
 
 # Environment variables for optimal coding performance
 ENV OLLAMA_NUM_PARALLEL=2 \
@@ -27,14 +29,17 @@ ENV OLLAMA_NUM_PARALLEL=2 \
 # Create necessary directories
 RUN mkdir -p /app/backend/data/config ${OLLAMA_MODELS}
 
-# Download Qwen2.5-Coder-32B model (~20GB) and bake into image
+# Download Qwen2.5-Coder-32B model (~20GB) using Ollama
 # This makes the image large but deployment is instant
 # hadolint ignore=DL3001
 RUN echo "Downloading Qwen2.5-Coder-32B model (~20GB)..." && \
-    ollama serve > /dev/null 2>&1 & \
+    ollama serve > /tmp/ollama.log 2>&1 & \
     OLLAMA_PID=$! && \
-    sleep 5 && \
+    echo "Waiting for Ollama to start..." && \
+    sleep 10 && \
+    echo "Pulling model (this will take 10-30 minutes)..." && \
     ollama pull qwen2.5-coder:32b-instruct-q5_K_M && \
+    echo "Stopping Ollama..." && \
     kill $OLLAMA_PID && \
     wait $OLLAMA_PID 2>/dev/null || true && \
     echo "Model successfully baked into image"
