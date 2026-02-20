@@ -31,26 +31,12 @@ help:
 build:
 	@echo "Building coding-agent Docker image..."
 	@echo "Version: $(VERSION)"
-	@echo ""
-	@echo "⚠️  WARNING: This build downloads ~20GB Qwen2.5-Coder model"
-	@echo "   - Build time: 20-40 minutes (depending on connection)"
-	@echo "   - Final image size: ~22-25GB"
-	@echo "   - Benefit: Instant deployment, no model download needed"
-	@echo ""
-	@read -p "Continue? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo "Build cancelled"; \
-		exit 1; \
-	fi
 	docker build -t $(IMAGE_NAME):$(VERSION) \
 		-t $(IMAGE_NAME):latest \
 		-t $(GHCR_IMAGE_NAME):$(VERSION) \
 		-t $(GHCR_IMAGE_NAME):latest \
 		.
-	@echo ""
-	@echo "✓ Image built successfully!"
-	@echo "  Size: ~22-25GB (includes model)"
+	@echo "✓ Image built successfully"
 
 push: build
 	@echo "Pushing to Docker Hub..."

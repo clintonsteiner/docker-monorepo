@@ -52,8 +52,13 @@ A locally hosted coding agent powered by **Qwen2.5-Coder-32B** running on **Open
    - Go to: http://unraid.clintonsteiner.com:3000
    - (or http://192.168.1.50:3000)
 
-3. **Start coding** (model is already included!):
-   - ~~No model download needed~~ - it's baked into the image!
+3. **Download the model** (first time only):
+   - In the Web UI, go to **Settings → Models**
+   - Click "Pull a model from Ollama.com"
+   - Enter: `qwen2.5-coder:32b-instruct-q5_K_M`
+   - Wait for download (~20GB, may take 10-20 minutes)
+
+4. **Start coding**:
    - Select the model from the dropdown
    - Start chatting with your AI coding assistant!
 
@@ -168,15 +173,11 @@ Qwen2.5-Coder-32B (Q5_K_M quantization, 20GB)
 - GitHub Container Registry: `ghcr.io/clintonsteiner/coding-agent`
 
 **Features of custom image:**
-- **Model baked in**: Qwen2.5-Coder-32B included (~22GB image)
-- No model download needed - instant startup!
 - Pre-configured optimal settings for coding
 - Custom system prompts optimized for Qwen2.5-Coder
 - Performance tuning for i9-12900k
 - Automatic health checks
 - Multi-architecture support (amd64, arm64)
-
-**Image Size:** ~22-25GB (includes 20GB model)
 
 ## Configuration
 
