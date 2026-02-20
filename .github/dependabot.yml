@@ -37,6 +37,14 @@ updates:
     assignees:
       - "clintonsteiner"
 
+  # Check for docker image updates for coding-agent
+  - package-ecosystem: "docker"
+    directory: "/coding-agent"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "clintonsteiner"
+
   # Python dependencies for jenkinsapi
   - package-ecosystem: "pip"
     directory: "/jenkinsapi"

@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: coding-agent
+    ports:
+      - "3000:8080"  # Web UI port
+    volumes:
+      - open-webui-data:/app/backend/data  # Persistent data (conversations, settings)
+      - ollama-models:/root/.ollama        # Model storage
+    environment:
+      # Ollama backend URL (built-in)
+      - OLLAMA_BASE_URL=http://localhost:11434
+
+      # Enable code execution
+      - ENABLE_CODE_EXECUTION=true
+      - CODE_EXECUTION_SANDBOX=true
+
+      # Performance tuning for CPU
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_NUM_THREADS=12
+      - OLLAMA_NUM_CTX=32768        # 32K context window
+      - OLLAMA_KEEP_ALIVE=30m       # Keep model loaded for 30 min
+
+      # Optional: Authentication (disable for internal network)
+      - WEBUI_AUTH=false
+
+      # Timezone
+      - TZ=America/Chicago
+
+    deploy:
+      resources:
+        limits:
+          cpus: '14'      # Leave 2 cores for system
+          memory: 80G     # Leave 16GB for system
+        reservations:
+          cpus: '8'
+          memory: 40G
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s  # Give it time to load the model
+
+volumes:
+  open-webui-data:
+    driver: local
+  ollama-models:
+    driver: local

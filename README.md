@@ -10,6 +10,7 @@ CI/CD workflows, pre-commit hooks, and development tools.
 | **[caddy-cloudflaredns](./caddy-cloudflaredns/)** | Caddy + Cloudflare DNS for automatic TLS | [![Docker Build][caddy-workflow-badge]][caddy-workflow-url] |
 | **[jenkinsapi](./jenkinsapi/)** | Jenkins + Python test environment | [![Docker Build][jenkins-workflow-badge]][jenkins-workflow-url] |
 | **[ollama](./ollama/)** | vLLM server for running 70B LLMs locally | [![Docker Build][ollama-workflow-badge]][ollama-workflow-url] |
+| **[coding-agent](./coding-agent/)** | Self-hosted Claude Code alternative | [![Docker Build][coding-agent-workflow-badge]][coding-agent-workflow-url] |
 
 ## Key Features
 
@@ -202,3 +203,6 @@ Each project is released under its respective license. See individual project RE
 
 [ollama-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/ollama-build-optimized.yml?style=flat-square
 [ollama-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/ollama-build-optimized.yml
+
+[coding-agent-workflow-badge]: https://img.shields.io/github/actions/workflow/status/clintonsteiner/docker-monorepo/coding-agent-build-optimized.yml?style=flat-square
+[coding-agent-workflow-url]: https://github.com/clintonsteiner/docker-monorepo/actions/workflows/coding-agent-build-optimized.yml

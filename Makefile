@@ -1,7 +1,7 @@
-.PHONY: help install-hooks pre-commit build-caddy build-jenkinsapi build-ollama test-caddy test-jenkinsapi test-ollama test-all clean lint format validate build-all
+.PHONY: help install-hooks pre-commit build-caddy build-jenkinsapi build-ollama build-coding-agent test-caddy test-jenkinsapi test-ollama test-coding-agent test-all clean lint format validate build-all
 
 # Project definitions
-PROJECTS := caddy-cloudflaredns jenkinsapi ollama
+PROJECTS := caddy-cloudflaredns jenkinsapi ollama coding-agent
 
 help:
 	@echo "Docker Monorepo - Available targets:"
@@ -14,10 +14,12 @@ help:
 	@echo "  make build-caddy             Build caddy-cloudflaredns Docker image"
 	@echo "  make build-jenkinsapi        Build jenkinsapi Docker images"
 	@echo "  make build-ollama           Build ollama Docker image"
+	@echo "  make build-coding-agent      Build coding-agent Docker image"
 	@echo "  make build-all               Build all Docker images"
 	@echo "  make test-caddy              Build and test caddy-cloudflaredns"
 	@echo "  make test-jenkinsapi         Build and test jenkinsapi"
 	@echo "  make test-ollama            Build and test ollama"
+	@echo "  make test-coding-agent       Build and test coding-agent"
 	@echo "  make test-all                Build and test all projects"
 	@echo ""
 	@echo "Development:"
@@ -31,6 +33,7 @@ help:
 	@echo "  caddy-cloudflaredns/         Caddy with Cloudflare DNS module"
 	@echo "  jenkinsapi/                  Jenkins with Python test environment"
 	@echo "  ollama/                     vLLM server for Claude CLI"
+	@echo "  coding-agent/                Self-hosted Claude Code alternative"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make help                    Show this help message"
@@ -80,11 +83,20 @@ test-ollama:
 	@echo "Testing ollama..."
 	$(MAKE) -C ollama test
 
+# coding-agent targets
+build-coding-agent:
+	@echo "Building coding-agent..."
+	$(MAKE) -C coding-agent start
+
+test-coding-agent:
+	@echo "Testing coding-agent..."
+	$(MAKE) -C coding-agent test
+
 # Multi-project targets
-build-all: build-caddy build-jenkinsapi build-ollama
+build-all: build-caddy build-jenkinsapi build-ollama build-coding-agent
 	@echo "✓ All images built successfully"
 
-test-all: test-caddy test-jenkinsapi test-ollama
+test-all: test-caddy test-jenkinsapi test-ollama test-coding-agent
 	@echo "✓ All tests passed"
 
 lint:
@@ -116,6 +128,7 @@ clean:
 	$(MAKE) -C caddy-cloudflaredns clean 2>/dev/null || true
 	$(MAKE) -C jenkinsapi clean 2>/dev/null || true
 	$(MAKE) -C ollama clean 2>/dev/null || true
+	$(MAKE) -C coding-agent clean 2>/dev/null || true
 	@echo "✓ Cleanup complete"
 
 shell:
