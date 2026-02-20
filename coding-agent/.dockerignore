@@ -1,0 +1,36 @@
+# Git files
+.git
+.gitignore
+
+# Docker files
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Scripts
+scripts/
+test/
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode
+.idea
+*.code-workspace

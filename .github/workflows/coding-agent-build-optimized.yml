@@ -59,10 +59,11 @@ jobs:
           echo "Building version: $VERSION"
 
       - name: Login to Docker Hub
+        if: secrets.DOCKER_USERNAME != '' && secrets.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -71,6 +72,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare Docker tags
+        id: tags
+        run: |
+          TAGS="${{ env.REGISTRY_IMAGE_GHCR }}:latest,${{ env.REGISTRY_IMAGE_GHCR }}:${{ steps.version.outputs.VERSION }}"
+          if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            TAGS="$TAGS,${{ env.REGISTRY_IMAGE_DOCKERHUB }}:latest,${{ env.REGISTRY_IMAGE_DOCKERHUB }}:${{ steps.version.outputs.VERSION }}"
+            echo "Publishing to both GHCR and Docker Hub"
+          else
+            echo "Docker Hub credentials not found - publishing to GHCR only"
+          fi
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
       - name: Build and push to registries
         uses: docker/build-push-action@v5
         with:
@@ -78,11 +91,7 @@ jobs:
           file: ./coding-agent/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ env.REGISTRY_IMAGE_DOCKERHUB }}:latest
-            ${{ env.REGISTRY_IMAGE_DOCKERHUB }}:${{ steps.version.outputs.VERSION }}
-            ${{ env.REGISTRY_IMAGE_GHCR }}:latest
-            ${{ env.REGISTRY_IMAGE_GHCR }}:${{ steps.version.outputs.VERSION }}
+          tags: ${{ steps.tags.outputs.tags }}
           labels: |
             org.opencontainers.image.title=Coding Agent
             org.opencontainers.image.description=Self-hosted Claude Code alternative powered by Qwen2.5-Coder-32B
