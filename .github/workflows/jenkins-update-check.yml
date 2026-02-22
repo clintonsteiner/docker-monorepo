@@ -58,7 +58,7 @@ jobs:
               "https://plugins.jenkins.io/api/plugin/$plugin" 2>/dev/null \
               | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4); then
               if [ -n "$latest" ] && [ "$latest" != "$version" ]; then
-                ((UPDATES++))
+                ((UPDATES+=1))
                 echo "  $plugin: $version → $latest"
               fi
             fi
